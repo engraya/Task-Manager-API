@@ -1,0 +1,23 @@
+# Dependencies — reinstallable from package.json + package-lock.json; never commit
+node_modules/
+
+# Environment variables — contain secrets (DB passwords, JWT keys); never commit
+.env
+.env.local
+.env.*.local
+
+# Logs — runtime output, not source code
+logs/
+*.log
+npm-debug.log*
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE settings — personal preference, not project code
+.vscode/
+.idea/
+
+# Test coverage output — generated, not source
+coverage/
