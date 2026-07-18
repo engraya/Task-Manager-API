@@ -23,7 +23,8 @@ deployment) is documented in depth in the [`docs/`](docs/) folder.
 
 ```bash
 npm install
-npm run dev        # development: tsx watch (auto-restarts on save)
+cp .env.example .env   # local configuration (see docs/16-Environment-Variables.md)
+npm run dev            # development: tsx watch (auto-restarts on save)
 ```
 
 Other scripts:
