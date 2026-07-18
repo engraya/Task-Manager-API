@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    /* --- What JavaScript to produce --- */
+    "target": "ES2022",
+    "module": "commonjs",
+    "sourceMap": true,
+
+    /* --- Where files live --- */
+    "rootDir": "src",
+    "outDir": "dist",
+
+    /* --- Type safety --- */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    /* --- Interop & sanity --- */
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src"]
+}

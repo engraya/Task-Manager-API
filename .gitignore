@@ -1,6 +1,9 @@
 # Dependencies — reinstallable from package.json + package-lock.json; never commit
 node_modules/
 
+# Build output — generated from src/ by `npm run build`; never commit
+dist/
+
 # Environment variables — contain secrets (DB passwords, JWT keys); never commit
 .env
 .env.local

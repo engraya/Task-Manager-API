@@ -15,18 +15,24 @@ deployment) is documented in depth in the [`docs/`](docs/) folder.
 ## Tech Stack
 
 - **Runtime:** Node.js (v22)
+- **Language:** TypeScript (strict), compiled to CommonJS
 - **Framework:** Express.js
-- **Modules:** CommonJS
 - **Storage:** in-memory → file-based → MongoDB (introduced phase by phase)
 
 ## Getting Started
 
 ```bash
 npm install
-npm run dev
+npm run dev        # development: tsx watch (auto-restarts on save)
 ```
 
-(Scripts are added in Phase 1 — see `docs/` for the build log.)
+Other scripts:
+
+```bash
+npm run typecheck  # type-check only, no output files
+npm run build      # compile src/ -> dist/ with tsc
+npm start          # run the compiled production build
+```
 
 ## Project Status
 
