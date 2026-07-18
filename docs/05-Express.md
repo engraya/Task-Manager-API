@@ -121,6 +121,45 @@ fingerprint), `Content-Length`, and `X-Powered-By: Express` — the last one
 advertises the stack to attackers and is disabled in production
 (`app.disable('x-powered-by')`; part of our production hardening later).
 
+### The `req` object (added Phase 2)
+
+Express's `req` **is** Node's `IncomingMessage` (the same object from our
+raw-Node server) with extra parsed properties layered on. Verified live via a
+temporary echo endpoint; findings:
+
+| Property | What it holds | Gotchas (all observed on the wire) |
+|---|---|---|
+| `req.method` | `'GET'`, `'POST'`, … | uppercase, always |
+| `req.path` | `/debug/request` | path only — query string stripped |
+| `req.originalUrl` | `/debug/request?tag=work` | full URL as sent; use in logs/404s |
+| `req.query` | parsed query string as an object | **every value is a string**: `?completed=true` → `{ completed: "true" }` (string, not boolean). Repeated keys become arrays: `?tag=work&tag=urgent` → `{ tag: ["work","urgent"] }`. Type: treat as unknown-ish; parse before use. |
+| `req.params` | URL pattern captures (`/tasks/:id`) | Phase 3 — also always strings |
+| `req.body` | parsed body (only if a parser middleware ran) | `undefined` without `express.json()`; untrusted until validated |
+| `req.headers` | all headers as an object | **keys are lowercased** by Node: send `X-Request-Id`, read `req.headers['x-request-id']`. Prefer `req.get('X-Request-Id')` — case-insensitive lookup. |
+| `req.ip` | client address | `::1` = IPv6 localhost; behind proxies needs `trust proxy` (deployment phase) |
+
+The unifying rule: **everything that crosses the HTTP boundary is a string**
+(or array of strings). Numbers, booleans, dates — all are *our* parsing job.
+This is the same boundary principle as `req.body: unknown` and
+`process.env.* : string | undefined`.
+
+### The `res` object (added Phase 2)
+
+Node's `ServerResponse` plus helpers; every helper bottoms out in the same
+`writeHead`/`end` calls we made by hand:
+
+| Helper | Does | Notes |
+|---|---|---|
+| `res.status(code)` | sets status, returns `res` | enables `res.status(201).json(x)` |
+| `res.json(x)` | serialize + `Content-Type: application/json` + end | the API workhorse |
+| `res.send(x)` | type-sniffing send (string→html, object→json) | avoid for API data — be explicit |
+| `res.set('Header', 'v')` | set a response header | before the body, always |
+| `res.end()` | end without body | used with `204 No Content` (Phase 3+) |
+| `res.headersSent` | boolean guard | true once status/headers hit the wire |
+
+Sending twice = `ERR_HTTP_HEADERS_SENT` — Express adds convenience, not new
+HTTP physics: one response per request, headers travel first, no unsending.
+
 ### The app/server split
 
 ```

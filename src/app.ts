@@ -4,11 +4,18 @@
 // drive it without ever opening a network port.
 
 import express, { type Request, type Response } from 'express';
+import { config } from './config';
 
 interface Task {
   id: number;
   title: string;
   completed: boolean;
+}
+
+interface HealthResponse {
+  status: 'ok';
+  uptime: number;
+  environment: string;
 }
 
 const app = express();
@@ -21,6 +28,17 @@ app.use(express.json());
 
 app.get('/', (_req: Request, res: Response) => {
   res.send('Task Manager API');
+});
+
+// Health check — polled by load balancers / uptime monitors to decide
+// whether this process should receive traffic.
+app.get('/health', (_req: Request, res: Response) => {
+  const health: HealthResponse = {
+    status: 'ok',
+    uptime: process.uptime(),
+    environment: config.nodeEnv,
+  };
+  res.status(200).json(health);
 });
 
 app.get('/tasks', (_req: Request, res: Response) => {
