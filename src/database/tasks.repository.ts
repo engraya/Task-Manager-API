@@ -10,7 +10,15 @@
 // upward.
 
 import { TaskModel, type TaskDoc } from '../models/task.model';
-import type { Task } from '../types/task';
+import type { Priority, Task } from '../types/task';
+
+// Filters run WHERE THE DATA LIVES: Mongo returns only matching documents
+// instead of shipping the whole collection for the service to sift.
+// (Sorting deliberately stays in the service — see the note on findAll.)
+export interface TaskFilter {
+  completed?: boolean;
+  priority?: Priority;
+}
 
 // The one mapping in the codebase between storage identity and API
 // identity: _id (storage) <-> id (contract).
@@ -27,8 +35,18 @@ function toTask(doc: TaskDoc): Task {
   };
 }
 
-export async function findAll(): Promise<Task[]> {
-  const docs = await TaskModel.find().lean<TaskDoc[]>();
+// Note on sorting: it stays in the service, in memory, on purpose. Pushing
+// OUR sort semantics into Mongo would need schema investment — priority
+// order (low<medium<high) isn't alphabetical (needs a numeric rank field or
+// an aggregation $switch), and "nulls last in both directions" for dueDate
+// isn't BSON's ordering. At hundreds of tasks, in-memory sort is free;
+// the day data outgrows that, this comment is the work order.
+export async function findAll(filter: TaskFilter = {}): Promise<Task[]> {
+  const query: Partial<Pick<TaskDoc, 'completed' | 'priority'>> = {};
+  if (filter.completed !== undefined) query.completed = filter.completed;
+  if (filter.priority !== undefined) query.priority = filter.priority;
+
+  const docs = await TaskModel.find(query).lean<TaskDoc[]>();
   return docs.map(toTask);
 }
 

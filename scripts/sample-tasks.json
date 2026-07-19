@@ -1,0 +1,52 @@
+[
+  {
+    "title": "Review pull request #42",
+    "priority": "high",
+    "dueDate": "2026-07-20T17:00:00Z",
+    "description": "Backend auth changes need a second pair of eyes"
+  },
+  {
+    "title": "Write API documentation",
+    "priority": "medium",
+    "description": "Document the v1 endpoints in the README"
+  },
+  {
+    "title": "Fix flaky login test",
+    "priority": "high",
+    "dueDate": "2026-07-21T09:00:00Z"
+  },
+  {
+    "title": "Update dependencies",
+    "priority": "low",
+    "description": "npm outdated shows 3 minor updates"
+  },
+  {
+    "title": "Plan sprint retrospective",
+    "dueDate": "2026-07-24T15:30:00+02:00",
+    "description": "Collect discussion topics from the team board (note: this dueDate has a +02:00 offset — watch it come back normalized to UTC)"
+  },
+  {
+    "title": "Refactor user service",
+    "priority": "medium",
+    "dueDate": null
+  },
+  {
+    "title": "Prepare demo for stakeholders",
+    "priority": "high",
+    "dueDate": "2026-07-22T13:00:00Z",
+    "description": "Show the task API end to end — remember the health check"
+  },
+  {
+    "title": "Clean up feature flags",
+    "priority": "low"
+  },
+  {
+    "title": "Investigate slow /tasks endpoint",
+    "description": "p99 jumped after the last deploy — check the request logs first"
+  },
+  {
+    "title": "Backup verification drill",
+    "priority": "medium",
+    "dueDate": "2026-08-01T08:00:00Z"
+  }
+]

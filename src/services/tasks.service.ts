@@ -29,15 +29,11 @@ export interface ListTasksOptions {
 export async function listTasks(options: ListTasksOptions = {}): Promise<Task[]> {
   const { completed, priority, sortField = 'createdAt', direction = -1 } = options;
 
-  const all = await tasksRepository.findAll();
+  // Filtering happens in the database (only matching docs cross the wire);
+  // ordering policy stays here (see the repository's note on sorting).
+  const matching = await tasksRepository.findAll({ completed, priority });
 
-  return all
-    .filter(
-      (t) =>
-        (completed === undefined || t.completed === completed) &&
-        (priority === undefined || t.priority === priority),
-    )
-    .sort((a, b) => {
+  return matching.sort((a, b) => {
       if (sortField === 'priority') {
         return direction * (PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
       }
