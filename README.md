@@ -64,8 +64,11 @@ npm start          # run the compiled production build
   (atomic temp+rename writes, serialized write queue, single-owner cache);
   service and controllers async end to end; state verified to survive a
   process kill.
-- 🚧 Phase 9: MongoDB Integration — next: same repository contract, real
-  database underneath.
+- ✅ Phase 9: MongoDB Integration — Atlas replica set via Mongoose; UUID as
+  `_id`, lean-only repository (same five-function contract — service
+  untouched), connect-before-listen, readiness-aware `/health` (503 when
+  degraded), filters pushed into the database, `npm run seed` sample data.
+- 🚧 Phase 10: Authentication — next.
 
 ## Documentation
 
@@ -90,6 +93,7 @@ Concept deep-dives live in [`docs/`](docs/):
 | [16-Environment-Variables](docs/16-Environment-Variables.md) | Config, dotenv, fail-fast validation |
 | [25-TypeScript](docs/25-TypeScript.md) | Types at compile time, `unknown` at boundaries |
 | [26-Persistence](docs/26-Persistence.md) | Files first: atomicity, write queues, cache rules |
+| [27-MongoDB](docs/27-MongoDB.md) | Documents, Mongoose, lean reads, readiness |
 | [API-Contract](docs/API-Contract.md) | **The v1 contract** — endpoints, shapes, status codes |
 
 (Numbering follows the full course outline; gaps fill in as later phases introduce their concepts.)
