@@ -18,21 +18,10 @@ export interface Task {
   updatedAt: string; // ISO 8601, server-maintained
 }
 
-// What clients MAY send — never id/timestamps, and no `completed` at
-// creation (a new task is by definition not done).
-export interface CreateTaskInput {
-  title: string;
-  description?: string;
-  priority?: Priority;
-  dueDate?: string | null;
-}
-
-// PATCH input: everything optional, at least one field required (enforced
-// by validation in Phase 6).
-export interface UpdateTaskInput {
-  title?: string;
-  description?: string;
-  completed?: boolean;
-  priority?: Priority;
-  dueDate?: string | null;
-}
+// What clients may send is now DEFINED BY the zod schemas (Phase 6) and
+// inferred from them — re-exported here so `types/` stays the one address
+// for shapes. This is a type-only re-export: it is fully erased at compile
+// time, so no runtime import cycle exists (validators import PRIORITIES
+// from this file at runtime; this edge is types-only in the other
+// direction).
+export type { CreateTaskInput, UpdateTaskInput } from '../validators/task.schemas';

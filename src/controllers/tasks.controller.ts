@@ -6,17 +6,17 @@
 import type { RequestHandler, Response } from 'express';
 import * as tasksService from '../services/tasks.service';
 import { SORT_FIELDS, type SortField } from '../services/tasks.service';
-import { validateCreateTaskInput } from '../validators/create-task.manual';
-import { PRIORITIES, type Priority, type UpdateTaskInput } from '../types/task';
+import {
+  createTaskSchema,
+  updateTaskSchema,
+  zodIssuesToDetails,
+} from '../validators/task.schemas';
+import { PRIORITIES, type Priority } from '../types/task';
 import type { ApiError, ApiErrorDetail } from '../types/api';
 
 // ---------------------------------------------------------------------------
 // Shared helpers (HTTP-side)
 // ---------------------------------------------------------------------------
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 // Query values arrive as string | string[] | nested objects (qs parsing).
 // Policy: take the first string if the key was repeated, undefined otherwise.
@@ -109,15 +109,15 @@ export const listTasks: RequestHandler = (req, res) => {
 // ---------------------------------------------------------------------------
 
 export const createTask: RequestHandler = (req, res) => {
-  const result = validateCreateTaskInput(req.body);
+  const result = createTaskSchema.safeParse(req.body);
 
-  if (!result.ok) {
-    sendValidationError(res, result.details);
+  if (!result.success) {
+    sendValidationError(res, zodIssuesToDetails(result.error));
     return;
   }
 
-  // result.value is a PROVEN CreateTaskInput — no cast, no lie.
-  const task = tasksService.createTask(result.value);
+  // result.data is a PROVEN CreateTaskInput — inferred from the schema.
+  const task = tasksService.createTask(result.data);
   res.status(201).location(`/api/v1/tasks/${task.id}`).json(task);
 };
 
@@ -140,45 +140,16 @@ export const getTask: RequestHandler = (req, res) => {
 // PATCH /api/v1/tasks/:id — partial update
 // ---------------------------------------------------------------------------
 
-// The fields PATCH may touch — used to detect "empty" update requests.
-const UPDATABLE_FIELDS = [
-  'title',
-  'description',
-  'completed',
-  'priority',
-  'dueDate',
-] as const;
-
 export const updateTask: RequestHandler = (req, res) => {
-  const body: unknown = req.body;
+  const result = updateTaskSchema.safeParse(req.body);
 
-  if (
-    !isRecord(body) ||
-    !UPDATABLE_FIELDS.some((field) => body[field] !== undefined)
-  ) {
-    sendValidationError(res, [
-      {
-        field: 'body',
-        message: `at least one of ${UPDATABLE_FIELDS.join(', ')} is required`,
-      },
-    ]);
+  if (!result.success) {
+    sendValidationError(res, zodIssuesToDetails(result.error));
     return;
   }
 
-  if (
-    body.title !== undefined &&
-    (typeof body.title !== 'string' || body.title.trim() === '')
-  ) {
-    sendValidationError(res, [
-      { field: 'title', message: 'title must be a non-empty string' },
-    ]);
-    return;
-  }
-
-  // TODO(phase-6): same visible lie as in POST.
-  const input = body as unknown as UpdateTaskInput;
-
-  const task = tasksService.updateTask(firstString(req.params.id) ?? '', input);
+  // result.data is a PROVEN UpdateTaskInput — the last cast-lie is gone.
+  const task = tasksService.updateTask(firstString(req.params.id) ?? '', result.data);
 
   if (task === undefined) {
     sendNotFound(res);
