@@ -43,8 +43,24 @@ function parseDataFile(value: string | undefined): string {
   return value;
 }
 
+// Optional during the Phase 9 migration; becomes REQUIRED (fail-fast, no
+// default — it contains credentials and defaults would mask a missing
+// secret) when the mongo repository goes live in Step 9.2.
+function parseMongoUri(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!value.startsWith('mongodb://') && !value.startsWith('mongodb+srv://')) {
+    throw new Error(
+      'MONGODB_URI must start with mongodb:// or mongodb+srv://',
+    );
+  }
+  return value;
+}
+
 export const config = {
   nodeEnv: parseNodeEnv(process.env.NODE_ENV),
   port: parsePort(process.env.PORT),
   dataFile: parseDataFile(process.env.DATA_FILE),
+  mongoUri: parseMongoUri(process.env.MONGODB_URI),
 } as const;
