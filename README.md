@@ -68,7 +68,11 @@ npm start          # run the compiled production build
   `_id`, lean-only repository (same five-function contract — service
   untouched), connect-before-listen, readiness-aware `/health` (503 when
   degraded), filters pushed into the database, `npm run seed` sample data.
-- 🚧 Phase 10: Authentication — next.
+- ✅ Phase 10: Authentication — bcrypt-hashed users (cost 12, unique-index
+  duplicate authority), login issuing 1-hour JWTs, vague timing-equalized
+  401s, `requireAuth` middleware (signature + expiry verification, typed
+  `req.userId` via module augmentation) gating all task routes.
+- 🚧 Phase 11: Authorization — next.
 
 ## Documentation
 
@@ -94,6 +98,7 @@ Concept deep-dives live in [`docs/`](docs/):
 | [25-TypeScript](docs/25-TypeScript.md) | Types at compile time, `unknown` at boundaries |
 | [26-Persistence](docs/26-Persistence.md) | Files first: atomicity, write queues, cache rules |
 | [27-MongoDB](docs/27-MongoDB.md) | Documents, Mongoose, lean reads, readiness |
+| [28-Authentication](docs/28-Authentication.md) | bcrypt vs argon2, JWT anatomy, sessions vs tokens |
 | [API-Contract](docs/API-Contract.md) | **The v1 contract** — endpoints, shapes, status codes |
 
 (Numbering follows the full course outline; gaps fill in as later phases introduce their concepts.)

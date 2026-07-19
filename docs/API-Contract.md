@@ -172,11 +172,19 @@ interface PublicUser {     // what responses carry
 - **401** → `ApiError` with a DELIBERATELY VAGUE message ("Invalid email or
   password") — never reveal which half was wrong (user-enumeration defense)
 
-### Protected endpoints (Phase 10.3+)
+### Protected endpoints (Phase 10.3)
 
 All `/api/v1/tasks` endpoints require `Authorization: Bearer <token>`.
-Missing/invalid/expired token → **401** `ApiError`. (Phase 11 adds per-user
-ownership: your token sees your tasks.)
+
+- No/non-Bearer credentials → **401** `"Authentication required"`
+- Present but invalid/tampered/expired token → **401** `"Invalid or expired
+  token"` (which check failed is never revealed)
+- The auth gate runs BEFORE body validation: an unauthenticated request with
+  an invalid body gets 401, not 422 (precedence: 401 → 400 → 422 → 404)
+
+The auth endpoints themselves (`/register`, `/login`) are public — the
+bootstrap boundary: you cannot require a token to obtain a token.
+(Phase 11 adds per-user ownership: your token sees your tasks.)
 
 ---
 
