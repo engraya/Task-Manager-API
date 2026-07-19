@@ -5,10 +5,10 @@
 
 import express, { type Request, type Response } from 'express';
 import { config } from './config';
+import { NotFoundError } from './errors/app-error';
 import { errorHandler } from './middlewares/error-handler';
 import { requestLogger } from './middlewares/request-logger';
 import tasksRouter from './routes/tasks.routes';
-import type { ApiError } from './types/api';
 
 interface HealthResponse {
   status: 'ok';
@@ -41,13 +41,11 @@ app.get('/health', (_req: Request, res: Response) => {
 // The tasks resource — router handles everything under this prefix.
 app.use('/api/v1/tasks', tasksRouter);
 
-// Fallback — Express only reaches this if no route above matched.
-// Error shape per docs/API-Contract.md.
-app.use((req: Request, res: Response) => {
-  const body: ApiError = {
-    error: { message: `Cannot ${req.method} ${req.originalUrl}` },
-  };
-  res.status(404).json(body);
+// Fallback — reached only if no route above matched. It doesn't format
+// anything; like every other error source it just throws, and the error
+// handler below turns it into the contract envelope.
+app.use((req: Request) => {
+  throw new NotFoundError(`Cannot ${req.method} ${req.originalUrl}`);
 });
 
 // FINAL layer: the error handler. Four-argument signature = error

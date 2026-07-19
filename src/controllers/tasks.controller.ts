@@ -3,16 +3,17 @@
 // request → DELEGATE to the service → RESPOND with a status and body.
 // Business rules and data live one layer down, in ../services/tasks.service.
 
-import type { RequestHandler, Response } from 'express';
+import type { RequestHandler } from 'express';
 import * as tasksService from '../services/tasks.service';
 import { SORT_FIELDS, type SortField } from '../services/tasks.service';
+import { NotFoundError, ValidationError } from '../errors/app-error';
 import {
   PRIORITIES,
   type CreateTaskInput,
   type Priority,
   type UpdateTaskInput,
 } from '../types/task';
-import type { ApiError, ApiErrorDetail } from '../types/api';
+import type { ApiErrorDetail } from '../types/api';
 
 // ---------------------------------------------------------------------------
 // Shared helpers (HTTP-side)
@@ -24,20 +25,6 @@ function firstString(value: unknown): string | undefined {
   if (typeof value === 'string') return value;
   if (Array.isArray(value) && typeof value[0] === 'string') return value[0];
   return undefined;
-}
-
-function sendNotFound(res: Response): void {
-  const body: ApiError = { error: { message: 'Task not found' } };
-  res.status(404).json(body);
-}
-
-function sendValidationError(
-  res: Response,
-  details: ApiErrorDetail[],
-  message = 'Validation failed',
-): void {
-  const body: ApiError = { error: { message, details } };
-  res.status(422).json(body);
 }
 
 // ---------------------------------------------------------------------------
@@ -96,8 +83,7 @@ export const listTasks: RequestHandler = (req, res) => {
   }
 
   if (details.length > 0) {
-    sendValidationError(res, details, 'Invalid query parameters');
-    return;
+    throw new ValidationError(details, 'Invalid query parameters');
   }
 
   const result = tasksService.listTasks({ completed, priority, sortField, direction });
@@ -126,8 +112,7 @@ export const getTask: RequestHandler = (req, res) => {
   const task = tasksService.getTaskById(firstString(req.params.id) ?? '');
 
   if (task === undefined) {
-    sendNotFound(res);
-    return;
+    throw new NotFoundError('Task not found');
   }
 
   res.status(200).json(task);
@@ -144,8 +129,7 @@ export const updateTask: RequestHandler = (req, res) => {
   const task = tasksService.updateTask(firstString(req.params.id) ?? '', input);
 
   if (task === undefined) {
-    sendNotFound(res);
-    return;
+    throw new NotFoundError('Task not found');
   }
 
   res.status(200).json(task);
@@ -159,8 +143,7 @@ export const deleteTask: RequestHandler = (req, res) => {
   const deleted = tasksService.deleteTask(firstString(req.params.id) ?? '');
 
   if (!deleted) {
-    sendNotFound(res);
-    return;
+    throw new NotFoundError('Task not found');
   }
 
   res.status(204).end();

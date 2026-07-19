@@ -9,7 +9,8 @@
 
 import type { RequestHandler } from 'express';
 import { ZodError, type ZodType } from 'zod';
-import type { ApiError, ApiErrorDetail } from '../types/api';
+import { ValidationError } from '../errors/app-error';
+import type { ApiErrorDetail } from '../types/api';
 
 // Translate zod's issue list into our contract's error details. Kept here —
 // beside the only code that needs it — so the schemas file stays pure.
@@ -21,18 +22,13 @@ export function zodIssuesToDetails(error: ZodError): ApiErrorDetail[] {
 }
 
 export function validateBody(schema: ZodType): RequestHandler {
-  return (req, res, next) => {
+  return (req, _res, next) => {
     const result = schema.safeParse(req.body);
 
     if (!result.success) {
-      const body: ApiError = {
-        error: {
-          message: 'Validation failed',
-          details: zodIssuesToDetails(result.error),
-        },
-      };
-      res.status(422).json(body);
-      return;
+      // Thrown, not formatted: the error middleware is the ONLY place that
+      // turns errors into responses.
+      throw new ValidationError(zodIssuesToDetails(result.error));
     }
 
     req.body = result.data;
