@@ -4,6 +4,9 @@ node_modules/
 # Build output — generated from src/ by `npm run build`; never commit
 dist/
 
+# Runtime data — the app's stored state is not source code
+data/
+
 # Environment variables — contain secrets (DB passwords, JWT keys); never commit
 .env
 .env.local

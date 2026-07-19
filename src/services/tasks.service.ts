@@ -1,23 +1,17 @@
-// services/tasks.service.ts — business logic and (for now) data access for
-// the tasks resource.
-//
-// THE LAYER RULE: this file knows nothing about HTTP. No req, no res, no
-// status codes, no envelopes. It takes typed input and returns domain
-// results; "not found" is expressed as undefined/false, and the controller
-// decides what that means on the wire.
-//
-// The in-memory array is still here TEMPORARILY — Phase 8 moves storage
-// behind this layer, and nothing above it will notice.
+// services/tasks.service.ts — business logic for the tasks resource.
+// HTTP-free as ever. As of Phase 8, storage lives one layer DOWN behind
+// ../database/tasks.repository — this service orchestrates rules; the
+// repository persists. I/O at the bottom means everything here is async:
+// promises propagate from the repository upward.
 
 import crypto from 'node:crypto';
+import * as tasksRepository from '../database/tasks.repository';
 import type {
   CreateTaskInput,
   Priority,
   Task,
   UpdateTaskInput,
 } from '../types/task';
-
-const tasks: Task[] = [];
 
 export const SORT_FIELDS = ['createdAt', 'dueDate', 'priority'] as const;
 export type SortField = (typeof SORT_FIELDS)[number];
@@ -32,11 +26,12 @@ export interface ListTasksOptions {
   direction?: 1 | -1; // default: -1 (desc — newest/highest first)
 }
 
-export function listTasks(options: ListTasksOptions = {}): Task[] {
+export async function listTasks(options: ListTasksOptions = {}): Promise<Task[]> {
   const { completed, priority, sortField = 'createdAt', direction = -1 } = options;
 
-  // filter() returns a NEW array, so the sort below never reorders the store.
-  return tasks
+  const all = await tasksRepository.findAll();
+
+  return all
     .filter(
       (t) =>
         (completed === undefined || t.completed === completed) &&
@@ -59,12 +54,12 @@ export function listTasks(options: ListTasksOptions = {}): Task[] {
     });
 }
 
-export function createTask(input: CreateTaskInput): Task {
+export async function createTask(input: CreateTaskInput): Promise<Task> {
   const now = new Date().toISOString();
 
   const task: Task = {
     id: crypto.randomUUID(),
-    title: input.title.trim(),
+    title: input.title,
     description: input.description ?? '',
     completed: false, // invariant: a new task is never born completed
     priority: input.priority ?? 'medium',
@@ -73,38 +68,40 @@ export function createTask(input: CreateTaskInput): Task {
     updatedAt: now,
   };
 
-  tasks.push(task);
+  await tasksRepository.insert(task);
   return task;
 }
 
-export function getTaskById(id: string): Task | undefined {
-  return tasks.find((t) => t.id === id);
+export async function getTaskById(id: string): Promise<Task | undefined> {
+  return tasksRepository.findById(id);
 }
 
 // Merge semantics: absent field = don't touch; present field = set —
 // including null for dueDate ("clear it") and false for completed. Checks
 // are `!== undefined`, never `??` (?? would swallow an explicit null).
-export function updateTask(id: string, input: UpdateTaskInput): Task | undefined {
-  const task = tasks.find((t) => t.id === id);
-  if (task === undefined) {
+// Note we build a NEW object and hand it to the repository — no shared
+// mutable references between layers.
+export async function updateTask(
+  id: string,
+  input: UpdateTaskInput,
+): Promise<Task | undefined> {
+  const existing = await tasksRepository.findById(id);
+  if (existing === undefined) {
     return undefined;
   }
 
-  if (input.title !== undefined) task.title = input.title.trim();
-  if (input.description !== undefined) task.description = input.description;
-  if (input.completed !== undefined) task.completed = input.completed;
-  if (input.priority !== undefined) task.priority = input.priority;
-  if (input.dueDate !== undefined) task.dueDate = input.dueDate; // null clears
-  task.updatedAt = new Date().toISOString();
+  const updated: Task = { ...existing };
+  if (input.title !== undefined) updated.title = input.title;
+  if (input.description !== undefined) updated.description = input.description;
+  if (input.completed !== undefined) updated.completed = input.completed;
+  if (input.priority !== undefined) updated.priority = input.priority;
+  if (input.dueDate !== undefined) updated.dueDate = input.dueDate; // null clears
+  updated.updatedAt = new Date().toISOString();
 
-  return task;
+  await tasksRepository.update(updated);
+  return updated;
 }
 
-export function deleteTask(id: string): boolean {
-  const index = tasks.findIndex((t) => t.id === id);
-  if (index === -1) {
-    return false;
-  }
-  tasks.splice(index, 1);
-  return true;
+export async function deleteTask(id: string): Promise<boolean> {
+  return tasksRepository.remove(id);
 }

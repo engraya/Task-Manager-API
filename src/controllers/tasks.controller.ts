@@ -33,7 +33,7 @@ function firstString(value: unknown): string | undefined {
 
 const ORDERS = ['asc', 'desc'] as const;
 
-export const listTasks: RequestHandler = (req, res) => {
+export const listTasks: RequestHandler = async (req, res) => {
   const details: ApiErrorDetail[] = [];
 
   const completedRaw = firstString(req.query.completed);
@@ -86,7 +86,12 @@ export const listTasks: RequestHandler = (req, res) => {
     throw new ValidationError(details, 'Invalid query parameters');
   }
 
-  const result = tasksService.listTasks({ completed, priority, sortField, direction });
+  const result = await tasksService.listTasks({
+    completed,
+    priority,
+    sortField,
+    direction,
+  });
   res.status(200).json(result);
 };
 
@@ -94,13 +99,13 @@ export const listTasks: RequestHandler = (req, res) => {
 // POST /api/v1/tasks — create
 // ---------------------------------------------------------------------------
 
-export const createTask: RequestHandler = (req, res) => {
+export const createTask: RequestHandler = async (req, res) => {
   // Guaranteed by validateBody(createTaskSchema) in the route chain — the
   // controller only ever runs with a parsed, transformed body. This
   // assertion documents that trust relationship (see routes file).
   const input = req.body as CreateTaskInput;
 
-  const task = tasksService.createTask(input);
+  const task = await tasksService.createTask(input);
   res.status(201).location(`/api/v1/tasks/${task.id}`).json(task);
 };
 
@@ -108,8 +113,8 @@ export const createTask: RequestHandler = (req, res) => {
 // GET /api/v1/tasks/:id — fetch one
 // ---------------------------------------------------------------------------
 
-export const getTask: RequestHandler = (req, res) => {
-  const task = tasksService.getTaskById(firstString(req.params.id) ?? '');
+export const getTask: RequestHandler = async (req, res) => {
+  const task = await tasksService.getTaskById(firstString(req.params.id) ?? '');
 
   if (task === undefined) {
     throw new NotFoundError('Task not found');
@@ -122,11 +127,14 @@ export const getTask: RequestHandler = (req, res) => {
 // PATCH /api/v1/tasks/:id — partial update
 // ---------------------------------------------------------------------------
 
-export const updateTask: RequestHandler = (req, res) => {
+export const updateTask: RequestHandler = async (req, res) => {
   // Guaranteed by validateBody(updateTaskSchema) in the route chain.
   const input = req.body as UpdateTaskInput;
 
-  const task = tasksService.updateTask(firstString(req.params.id) ?? '', input);
+  const task = await tasksService.updateTask(
+    firstString(req.params.id) ?? '',
+    input,
+  );
 
   if (task === undefined) {
     throw new NotFoundError('Task not found');
@@ -139,8 +147,8 @@ export const updateTask: RequestHandler = (req, res) => {
 // DELETE /api/v1/tasks/:id — remove
 // ---------------------------------------------------------------------------
 
-export const deleteTask: RequestHandler = (req, res) => {
-  const deleted = tasksService.deleteTask(firstString(req.params.id) ?? '');
+export const deleteTask: RequestHandler = async (req, res) => {
+  const deleted = await tasksService.deleteTask(firstString(req.params.id) ?? '');
 
   if (!deleted) {
     throw new NotFoundError('Task not found');

@@ -33,7 +33,18 @@ function parsePort(value: string | undefined): number {
   return port;
 }
 
+function parseDataFile(value: string | undefined): string {
+  if (value === undefined) {
+    return 'data/tasks.json';
+  }
+  if (value.trim() === '') {
+    throw new Error('DATA_FILE must not be empty when set');
+  }
+  return value;
+}
+
 export const config = {
   nodeEnv: parseNodeEnv(process.env.NODE_ENV),
   port: parsePort(process.env.PORT),
+  dataFile: parseDataFile(process.env.DATA_FILE),
 } as const;
