@@ -45,7 +45,10 @@ npm start          # run the compiled production build
 - ✅ Phase 3: Routing — all five contract endpoints live on `/api/v1/tasks`:
   create (201+Location), list (filters + sorting), get-one, patch
   (absent-vs-null semantics), delete (204); uniform error envelope.
-- 🚧 Phase 4: Controllers — next: extract HTTP handling from the routes file.
+- ✅ Phase 4: Controllers — HTTP layer extracted to named `RequestHandler`
+  functions; routes reduced to wiring; envelope helpers deduplicated;
+  behavior proven identical by sweep.
+- 🚧 Phase 5: Middleware & Services — next.
 
 ## Documentation
 
@@ -58,6 +61,7 @@ Concept deep-dives live in [`docs/`](docs/):
 | [03-REST](docs/03-REST.md) | Resources × methods, URL design, maturity model |
 | [04-NodeJS](docs/04-NodeJS.md) | V8, libuv, the event loop, non-blocking I/O |
 | [06-Express-Routing](docs/06-Express-Routing.md) | Routers, mounting, route params, order law |
+| [07-Controllers](docs/07-Controllers.md) | The HTTP layer; thin-controller principle |
 | [05-Express](docs/05-Express.md) | The framework: middleware stack, req/res anatomy |
 | [12-Request-Lifecycle](docs/12-Request-Lifecycle.md) | Client → handler, every stage, measured |
 | [13-Response-Lifecycle](docs/13-Response-Lifecycle.md) | Handler → client, headers-first irreversibility |
