@@ -56,8 +56,11 @@ npm start          # run the compiled production build
   schemas as single source of truth (`z.infer`), unknown-field rejection,
   UTC normalization, validation mounted as per-route middleware. Zero
   unproven casts remain.
-- 🚧 Phase 7: Error Handling — next: the last leaky path (400 HTML page)
-  and a real error architecture.
+- ✅ Phase 7: Error Handling — typed AppError hierarchy (operational vs
+  programmer errors), central four-argument error middleware as the only
+  formatter, malformed-JSON HTML leak fixed, all errors travel by throw
+  (Express 5 async forwarding verified).
+- 🚧 Phase 8: File-based Storage — next: tasks survive a restart.
 
 ## Documentation
 
@@ -73,6 +76,8 @@ Concept deep-dives live in [`docs/`](docs/):
 | [07-Controllers](docs/07-Controllers.md) | The HTTP layer; thin-controller principle |
 | [08-Middleware](docs/08-Middleware.md) | The pipeline: next(), ordering, custom logger |
 | [09-Validation](docs/09-Validation.md) | Parse don't validate; zod; validation middleware |
+| [10-Error-Handling](docs/10-Error-Handling.md) | Operational vs programmer errors; the one boundary |
+| [11-Status-Codes](docs/11-Status-Codes.md) | Every code this API speaks, with reasoning |
 | [17-Project-Architecture](docs/17-Project-Architecture.md) | The four layers and the dependency rule |
 | [05-Express](docs/05-Express.md) | The framework: middleware stack, req/res anatomy |
 | [12-Request-Lifecycle](docs/12-Request-Lifecycle.md) | Client → handler, every stage, measured |
