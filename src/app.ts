@@ -5,6 +5,7 @@
 
 import express, { type Request, type Response } from 'express';
 import { config } from './config';
+import { errorHandler } from './middlewares/error-handler';
 import { requestLogger } from './middlewares/request-logger';
 import tasksRouter from './routes/tasks.routes';
 import type { ApiError } from './types/api';
@@ -48,5 +49,9 @@ app.use((req: Request, res: Response) => {
   };
   res.status(404).json(body);
 });
+
+// FINAL layer: the error handler. Four-argument signature = error
+// middleware; must be registered after everything it protects.
+app.use(errorHandler);
 
 export default app;
