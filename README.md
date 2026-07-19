@@ -39,7 +39,10 @@ npm start          # run the compiled production build
 
 - ✅ Phase 1: Project Initialization — git, npm, TypeScript toolchain, raw Node
   http server, Express app/server split, validated env-based configuration.
-- 🚧 Phase 2: Express Fundamentals — next.
+- ✅ Phase 2: Express Fundamentals — req/res anatomy, health endpoint, REST
+  principles, the [v1 API contract](docs/API-Contract.md), request/response
+  lifecycles traced end to end.
+- 🚧 Phase 3: Routing — next: implement `/api/v1/tasks` against the contract.
 
 ## Documentation
 
@@ -49,9 +52,13 @@ Concept deep-dives live in [`docs/`](docs/):
 |---|---|
 | [01-Introduction](docs/01-Introduction.md) | What a backend is; the trust boundary |
 | [02-HTTP](docs/02-HTTP.md) | The protocol: methods, status codes, idempotency |
+| [03-REST](docs/03-REST.md) | Resources × methods, URL design, maturity model |
 | [04-NodeJS](docs/04-NodeJS.md) | V8, libuv, the event loop, non-blocking I/O |
-| [05-Express](docs/05-Express.md) | The framework: middleware stack, app/server split |
+| [05-Express](docs/05-Express.md) | The framework: middleware stack, req/res anatomy |
+| [12-Request-Lifecycle](docs/12-Request-Lifecycle.md) | Client → handler, every stage, measured |
+| [13-Response-Lifecycle](docs/13-Response-Lifecycle.md) | Handler → client, headers-first irreversibility |
 | [16-Environment-Variables](docs/16-Environment-Variables.md) | Config, dotenv, fail-fast validation |
 | [25-TypeScript](docs/25-TypeScript.md) | Types at compile time, `unknown` at boundaries |
+| [API-Contract](docs/API-Contract.md) | **The v1 contract** — endpoints, shapes, status codes |
 
 (Numbering follows the full course outline; gaps fill in as later phases introduce their concepts.)
