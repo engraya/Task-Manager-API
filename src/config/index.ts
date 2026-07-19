@@ -33,22 +33,14 @@ function parsePort(value: string | undefined): number {
   return port;
 }
 
-function parseDataFile(value: string | undefined): string {
+// REQUIRED, no default: it contains credentials, and a default (e.g. a
+// localhost fallback) would mask a missing secret until the worst moment
+// (docs/16 — defaults are for harmless knobs; secrets fail fast).
+function parseMongoUri(value: string | undefined): string {
   if (value === undefined) {
-    return 'data/tasks.json';
-  }
-  if (value.trim() === '') {
-    throw new Error('DATA_FILE must not be empty when set');
-  }
-  return value;
-}
-
-// Optional during the Phase 9 migration; becomes REQUIRED (fail-fast, no
-// default — it contains credentials and defaults would mask a missing
-// secret) when the mongo repository goes live in Step 9.2.
-function parseMongoUri(value: string | undefined): string | undefined {
-  if (value === undefined) {
-    return undefined;
+    throw new Error(
+      'MONGODB_URI is required — set it in .env (see .env.example)',
+    );
   }
   if (!value.startsWith('mongodb://') && !value.startsWith('mongodb+srv://')) {
     throw new Error(
@@ -61,6 +53,5 @@ function parseMongoUri(value: string | undefined): string | undefined {
 export const config = {
   nodeEnv: parseNodeEnv(process.env.NODE_ENV),
   port: parsePort(process.env.PORT),
-  dataFile: parseDataFile(process.env.DATA_FILE),
   mongoUri: parseMongoUri(process.env.MONGODB_URI),
 } as const;

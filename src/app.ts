@@ -5,15 +5,17 @@
 
 import express, { type Request, type Response } from 'express';
 import { config } from './config';
+import { isDatabaseConnected } from './database/connection';
 import { NotFoundError } from './errors/app-error';
 import { errorHandler } from './middlewares/error-handler';
 import { requestLogger } from './middlewares/request-logger';
 import tasksRouter from './routes/tasks.routes';
 
 interface HealthResponse {
-  status: 'ok';
+  status: 'ok' | 'degraded';
   uptime: number;
   environment: string;
+  database: 'connected' | 'disconnected';
 }
 
 const app = express();
@@ -29,13 +31,17 @@ app.use(express.json());
 
 // Health check — polled by load balancers / uptime monitors. Outside
 // /api/v1 on purpose: it describes the process, not the domain.
+// Since Phase 9 it reports READINESS, not just liveness: a process whose
+// database link dropped answers 503 so traffic routes elsewhere.
 app.get('/health', (_req: Request, res: Response) => {
+  const dbConnected = isDatabaseConnected();
   const health: HealthResponse = {
-    status: 'ok',
+    status: dbConnected ? 'ok' : 'degraded',
     uptime: process.uptime(),
     environment: config.nodeEnv,
+    database: dbConnected ? 'connected' : 'disconnected',
   };
-  res.status(200).json(health);
+  res.status(dbConnected ? 200 : 503).json(health);
 });
 
 // The tasks resource — router handles everything under this prefix.
