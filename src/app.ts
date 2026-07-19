@@ -5,6 +5,7 @@
 
 import express, { type Request, type Response } from 'express';
 import { config } from './config';
+import { requestLogger } from './middlewares/request-logger';
 import tasksRouter from './routes/tasks.routes';
 import type { ApiError } from './types/api';
 
@@ -15,6 +16,10 @@ interface HealthResponse {
 }
 
 const app = express();
+
+// First layer on purpose: subscribes before anything can respond, so every
+// request gets logged — including 404s and parse failures.
+app.use(requestLogger);
 
 // Body-parsing middleware — for requests with Content-Type: application/json
 // it parses the body stream and puts the result on req.body before any
