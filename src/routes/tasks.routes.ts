@@ -13,10 +13,17 @@ import {
   listTasks,
   updateTask,
 } from '../controllers/tasks.controller';
+import { requireAuth } from '../middlewares/require-auth';
 import { validateBody } from '../middlewares/validate';
 import { createTaskSchema, updateTaskSchema } from '../validators/task.schemas';
 
 const tasksRouter = Router();
+
+// Router-level gate: registered before every route below, so ALL task
+// endpoints require a valid token. One line here beats five copies in the
+// route chains — and makes "which routes are protected?" answerable at a
+// glance: everything on this router.
+tasksRouter.use(requireAuth);
 
 // Per-route middleware chains: the request passes left to right. Reading
 // this file now tells you each endpoint's validation policy at a glance.
