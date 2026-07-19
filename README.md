@@ -52,7 +52,12 @@ npm start          # run the compiled production build
   (first in pipeline, finish-event timing); business logic extracted to a
   service layer speaking pure domain; contract precedence codified
   (400 → 422 → 404).
-- 🚧 Phase 6: Validation — next: replace the `TODO(phase-6)` trust with proof.
+- ✅ Phase 6: Validation — manual validation learned by hand, then zod:
+  schemas as single source of truth (`z.infer`), unknown-field rejection,
+  UTC normalization, validation mounted as per-route middleware. Zero
+  unproven casts remain.
+- 🚧 Phase 7: Error Handling — next: the last leaky path (400 HTML page)
+  and a real error architecture.
 
 ## Documentation
 
@@ -67,6 +72,7 @@ Concept deep-dives live in [`docs/`](docs/):
 | [06-Express-Routing](docs/06-Express-Routing.md) | Routers, mounting, route params, order law |
 | [07-Controllers](docs/07-Controllers.md) | The HTTP layer; thin-controller principle |
 | [08-Middleware](docs/08-Middleware.md) | The pipeline: next(), ordering, custom logger |
+| [09-Validation](docs/09-Validation.md) | Parse don't validate; zod; validation middleware |
 | [17-Project-Architecture](docs/17-Project-Architecture.md) | The four layers and the dependency rule |
 | [05-Express](docs/05-Express.md) | The framework: middleware stack, req/res anatomy |
 | [12-Request-Lifecycle](docs/12-Request-Lifecycle.md) | Client → handler, every stage, measured |

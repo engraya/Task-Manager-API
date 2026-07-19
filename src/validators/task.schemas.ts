@@ -12,7 +12,6 @@
 
 import { z } from 'zod';
 import { PRIORITIES } from '../types/task';
-import type { ApiErrorDetail } from '../types/api';
 
 // ISO 8601 datetime (offset allowed), NORMALIZED to canonical UTC —
 // downstream code and storage see exactly one representation.
@@ -70,11 +69,3 @@ export const updateTaskSchema = z
 // The types come FROM the schemas — one source of truth for check and type.
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
-
-// Translate zod's issue list into our contract's error details.
-export function zodIssuesToDetails(error: z.ZodError): ApiErrorDetail[] {
-  return error.issues.map((issue) => ({
-    field: issue.path.length > 0 ? issue.path.join('.') : 'body',
-    message: issue.message,
-  }));
-}

@@ -7,11 +7,11 @@ import type { RequestHandler, Response } from 'express';
 import * as tasksService from '../services/tasks.service';
 import { SORT_FIELDS, type SortField } from '../services/tasks.service';
 import {
-  createTaskSchema,
-  updateTaskSchema,
-  zodIssuesToDetails,
-} from '../validators/task.schemas';
-import { PRIORITIES, type Priority } from '../types/task';
+  PRIORITIES,
+  type CreateTaskInput,
+  type Priority,
+  type UpdateTaskInput,
+} from '../types/task';
 import type { ApiError, ApiErrorDetail } from '../types/api';
 
 // ---------------------------------------------------------------------------
@@ -109,15 +109,12 @@ export const listTasks: RequestHandler = (req, res) => {
 // ---------------------------------------------------------------------------
 
 export const createTask: RequestHandler = (req, res) => {
-  const result = createTaskSchema.safeParse(req.body);
+  // Guaranteed by validateBody(createTaskSchema) in the route chain — the
+  // controller only ever runs with a parsed, transformed body. This
+  // assertion documents that trust relationship (see routes file).
+  const input = req.body as CreateTaskInput;
 
-  if (!result.success) {
-    sendValidationError(res, zodIssuesToDetails(result.error));
-    return;
-  }
-
-  // result.data is a PROVEN CreateTaskInput — inferred from the schema.
-  const task = tasksService.createTask(result.data);
+  const task = tasksService.createTask(input);
   res.status(201).location(`/api/v1/tasks/${task.id}`).json(task);
 };
 
@@ -141,15 +138,10 @@ export const getTask: RequestHandler = (req, res) => {
 // ---------------------------------------------------------------------------
 
 export const updateTask: RequestHandler = (req, res) => {
-  const result = updateTaskSchema.safeParse(req.body);
+  // Guaranteed by validateBody(updateTaskSchema) in the route chain.
+  const input = req.body as UpdateTaskInput;
 
-  if (!result.success) {
-    sendValidationError(res, zodIssuesToDetails(result.error));
-    return;
-  }
-
-  // result.data is a PROVEN UpdateTaskInput — the last cast-lie is gone.
-  const task = tasksService.updateTask(firstString(req.params.id) ?? '', result.data);
+  const task = tasksService.updateTask(firstString(req.params.id) ?? '', input);
 
   if (task === undefined) {
     sendNotFound(res);

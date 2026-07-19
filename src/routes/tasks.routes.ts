@@ -13,13 +13,17 @@ import {
   listTasks,
   updateTask,
 } from '../controllers/tasks.controller';
+import { validateBody } from '../middlewares/validate';
+import { createTaskSchema, updateTaskSchema } from '../validators/task.schemas';
 
 const tasksRouter = Router();
 
+// Per-route middleware chains: the request passes left to right. Reading
+// this file now tells you each endpoint's validation policy at a glance.
 tasksRouter.get('/', listTasks);
-tasksRouter.post('/', createTask);
+tasksRouter.post('/', validateBody(createTaskSchema), createTask);
 tasksRouter.get('/:id', getTask);
-tasksRouter.patch('/:id', updateTask);
+tasksRouter.patch('/:id', validateBody(updateTaskSchema), updateTask);
 tasksRouter.delete('/:id', deleteTask);
 
 export default tasksRouter;
