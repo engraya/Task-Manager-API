@@ -5,12 +5,8 @@
 
 import express, { type Request, type Response } from 'express';
 import { config } from './config';
-
-interface Task {
-  id: number;
-  title: string;
-  completed: boolean;
-}
+import tasksRouter from './routes/tasks.routes';
+import type { ApiError } from './types/api';
 
 interface HealthResponse {
   status: 'ok';
@@ -20,18 +16,13 @@ interface HealthResponse {
 
 const app = express();
 
-// Body-parsing middleware — replaces the manual chunk-collecting, string
-// concatenation, and try/catch JSON.parse from our raw-Node server.
-// For requests with Content-Type: application/json it parses the body
-// stream and puts the result on req.body before any route runs.
+// Body-parsing middleware — for requests with Content-Type: application/json
+// it parses the body stream and puts the result on req.body before any
+// route runs.
 app.use(express.json());
 
-app.get('/', (_req: Request, res: Response) => {
-  res.send('Task Manager API');
-});
-
-// Health check — polled by load balancers / uptime monitors to decide
-// whether this process should receive traffic.
+// Health check — polled by load balancers / uptime monitors. Outside
+// /api/v1 on purpose: it describes the process, not the domain.
 app.get('/health', (_req: Request, res: Response) => {
   const health: HealthResponse = {
     status: 'ok',
@@ -41,22 +32,16 @@ app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json(health);
 });
 
-app.get('/tasks', (_req: Request, res: Response) => {
-  const tasks: Task[] = [
-    { id: 1, title: 'Learn backend engineering', completed: false },
-  ];
-  res.json(tasks);
-});
-
-app.post('/tasks', (req: Request, res: Response) => {
-  // Boundary rule: parsed input is untrusted until validated (Phase 6).
-  const body: unknown = req.body;
-  res.status(201).json({ received: body });
-});
+// The tasks resource — router handles everything under this prefix.
+app.use('/api/v1/tasks', tasksRouter);
 
 // Fallback — Express only reaches this if no route above matched.
+// Error shape per docs/API-Contract.md.
 app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: `Cannot ${req.method} ${req.originalUrl}` });
+  const body: ApiError = {
+    error: { message: `Cannot ${req.method} ${req.originalUrl}` },
+  };
+  res.status(404).json(body);
 });
 
 export default app;
