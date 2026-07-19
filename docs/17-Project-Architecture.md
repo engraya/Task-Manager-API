@@ -22,9 +22,11 @@ replaced without the layers above noticing:
    │ services/                 │  BUSINESS LOGIC: rules, defaults,
    │  tasks.service.ts         │  invariants, merge semantics — NO HTTP
    ├───────────────────────────┤
-   │ (storage)                 │  DATA: today an in-memory array inside
-   │  Phase 8: files → Phase 9 │  the service; tomorrow a repository
-   │  MongoDB                  │  behind the same function signatures
+   │ database/                 │  DATA (real since Phase 8): the tasks
+   │  tasks.repository.ts      │  repository — findAll/findById/insert/
+   │  → data/tasks.json        │  update/remove over a JSON file with
+   │  (Phase 9: same contract, │  atomic writes ([26-Persistence.md]).
+   │   MongoDB underneath)     │  Phase 9 swaps the inside only.
    └───────────────────────────┘
         shared: types/ (contracts) · config/ (environment) · utils/ (future)
 ```
@@ -53,10 +55,12 @@ typed errors; the principle stays.
 
 ## Why layers — the three payoffs
 
-1. **Replaceability along the seams.** Phase 9 swaps the array for MongoDB
-   *inside/below the service*; controllers and routes don't change by even a
-   line. Phase 12 tests services with plain function calls (no HTTP server)
-   and controllers with supertest (no real storage).
+1. **Replaceability along the seams.** Proven once already: Phase 8 moved
+   storage from an in-service array to a file-backed repository and the
+   controllers/routes did not change. Phase 9 repeats the trick beneath the
+   repository contract (file → MongoDB). Phase 12 tests services with plain
+   function calls (no HTTP server) and controllers with supertest (no real
+   storage).
 2. **Navigability.** Any behavior has one home. Wrong status code →
    controller. Wrong default → service. Wrong URL → routes. Slow everything
    → middleware. Onboarding is a filename convention.

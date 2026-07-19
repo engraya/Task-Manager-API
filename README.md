@@ -60,7 +60,12 @@ npm start          # run the compiled production build
   programmer errors), central four-argument error middleware as the only
   formatter, malformed-JSON HTML leak fixed, all errors travel by throw
   (Express 5 async forwarding verified).
-- 🚧 Phase 8: File-based Storage — next: tasks survive a restart.
+- ✅ Phase 8: File-based Storage — repository layer over a JSON file
+  (atomic temp+rename writes, serialized write queue, single-owner cache);
+  service and controllers async end to end; state verified to survive a
+  process kill.
+- 🚧 Phase 9: MongoDB Integration — next: same repository contract, real
+  database underneath.
 
 ## Documentation
 
@@ -84,6 +89,7 @@ Concept deep-dives live in [`docs/`](docs/):
 | [13-Response-Lifecycle](docs/13-Response-Lifecycle.md) | Handler → client, headers-first irreversibility |
 | [16-Environment-Variables](docs/16-Environment-Variables.md) | Config, dotenv, fail-fast validation |
 | [25-TypeScript](docs/25-TypeScript.md) | Types at compile time, `unknown` at boundaries |
+| [26-Persistence](docs/26-Persistence.md) | Files first: atomicity, write queues, cache rules |
 | [API-Contract](docs/API-Contract.md) | **The v1 contract** — endpoints, shapes, status codes |
 
 (Numbering follows the full course outline; gaps fill in as later phases introduce their concepts.)
