@@ -6,12 +6,8 @@
 import type { RequestHandler, Response } from 'express';
 import * as tasksService from '../services/tasks.service';
 import { SORT_FIELDS, type SortField } from '../services/tasks.service';
-import {
-  PRIORITIES,
-  type CreateTaskInput,
-  type Priority,
-  type UpdateTaskInput,
-} from '../types/task';
+import { validateCreateTaskInput } from '../validators/create-task.manual';
+import { PRIORITIES, type Priority, type UpdateTaskInput } from '../types/task';
 import type { ApiError, ApiErrorDetail } from '../types/api';
 
 // ---------------------------------------------------------------------------
@@ -113,30 +109,15 @@ export const listTasks: RequestHandler = (req, res) => {
 // ---------------------------------------------------------------------------
 
 export const createTask: RequestHandler = (req, res) => {
-  const body: unknown = req.body;
+  const result = validateCreateTaskInput(req.body);
 
-  // Minimal guard until Phase 6 brings schema validation: without a title
-  // we cannot construct a Task at all.
-  if (
-    !isRecord(body) ||
-    typeof body.title !== 'string' ||
-    body.title.trim() === ''
-  ) {
-    sendValidationError(res, [
-      {
-        field: 'title',
-        message: 'title is required and must be a non-empty string',
-      },
-    ]);
+  if (!result.ok) {
+    sendValidationError(res, result.details);
     return;
   }
 
-  // TODO(phase-6): deliberate, visible lie — only `title` is proven;
-  // priority/dueDate/description are trusted unchecked until schema
-  // validation replaces trust with proof.
-  const input = body as unknown as CreateTaskInput;
-
-  const task = tasksService.createTask(input);
+  // result.value is a PROVEN CreateTaskInput — no cast, no lie.
+  const task = tasksService.createTask(result.value);
   res.status(201).location(`/api/v1/tasks/${task.id}`).json(task);
 };
 
