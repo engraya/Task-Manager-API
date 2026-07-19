@@ -6,8 +6,17 @@
 
 import crypto from 'node:crypto';
 import { Router, type Request, type Response } from 'express';
-import type { CreateTaskInput, Task } from '../types/task';
+import type { CreateTaskInput, Task, UpdateTaskInput } from '../types/task';
 import type { ApiError } from '../types/api';
+
+// The fields PATCH may touch — used to detect "empty" update requests.
+const UPDATABLE_FIELDS = [
+  'title',
+  'description',
+  'completed',
+  'priority',
+  'dueDate',
+] as const;
 
 // Narrowing helper: "is this a plain object I can safely index into?"
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -88,6 +97,72 @@ tasksRouter.get('/:id', (req: Request, res: Response) => {
     res.status(404).json(error);
     return;
   }
+
+  res.status(200).json(task);
+});
+
+// PATCH /api/v1/tasks/:id — partially update a task.
+// Contract: 200 + complete updated Task; 404 unknown id; 422 empty/invalid.
+// The core semantic: absent field = don't touch; present field = set —
+// including `null` for dueDate ("clear it") and `false` for completed.
+// This is why the merge below checks `!== undefined` and NEVER uses `??`:
+// ?? would treat an explicit null as "absent" and silently keep the old value.
+tasksRouter.patch('/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const task = tasks.find((t) => t.id === id);
+
+  if (task === undefined) {
+    const error: ApiError = { error: { message: 'Task not found' } };
+    res.status(404).json(error);
+    return;
+  }
+
+  const body: unknown = req.body;
+
+  if (
+    !isRecord(body) ||
+    !UPDATABLE_FIELDS.some((field) => body[field] !== undefined)
+  ) {
+    const error: ApiError = {
+      error: {
+        message: 'Validation failed',
+        details: [
+          {
+            field: 'body',
+            message: `at least one of ${UPDATABLE_FIELDS.join(', ')} is required`,
+          },
+        ],
+      },
+    };
+    res.status(422).json(error);
+    return;
+  }
+
+  if (
+    body.title !== undefined &&
+    (typeof body.title !== 'string' || body.title.trim() === '')
+  ) {
+    const error: ApiError = {
+      error: {
+        message: 'Validation failed',
+        details: [{ field: 'title', message: 'title must be a non-empty string' }],
+      },
+    };
+    res.status(422).json(error);
+    return;
+  }
+
+  // TODO(phase-6): same visible lie as in POST — only title is proven;
+  // priority/dueDate/completed/description are trusted unchecked, and
+  // unknown fields are silently ignored instead of rejected.
+  const input = body as unknown as UpdateTaskInput;
+
+  if (input.title !== undefined) task.title = input.title.trim();
+  if (input.description !== undefined) task.description = input.description;
+  if (input.completed !== undefined) task.completed = input.completed;
+  if (input.priority !== undefined) task.priority = input.priority;
+  if (input.dueDate !== undefined) task.dueDate = input.dueDate; // null clears
+  task.updatedAt = new Date().toISOString();
 
   res.status(200).json(task);
 });
