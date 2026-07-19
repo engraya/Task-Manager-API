@@ -1,29 +1,21 @@
 // controllers/tasks.controller.ts — the HTTP layer for the tasks resource.
-// A controller's job is translation: HTTP request in → typed input out,
-// domain result in → status code + response body out. Nothing else.
-//
-// HONEST NOTE: right now this file also holds the data store and the
-// business rules (defaults, merge semantics, filtering). That is Phase 5's
-// extraction — the service layer. One refactor per phase.
+// Each handler follows the same shape: EXTRACT typed values from the
+// request → DELEGATE to the service → RESPOND with a status and body.
+// Business rules and data live one layer down, in ../services/tasks.service.
 
-import crypto from 'node:crypto';
 import type { RequestHandler, Response } from 'express';
+import * as tasksService from '../services/tasks.service';
+import { SORT_FIELDS, type SortField } from '../services/tasks.service';
 import {
   PRIORITIES,
   type CreateTaskInput,
   type Priority,
-  type Task,
   type UpdateTaskInput,
 } from '../types/task';
 import type { ApiError, ApiErrorDetail } from '../types/api';
 
 // ---------------------------------------------------------------------------
-// TEMPORARY in-memory store (dies with the process; Phase 8 persists it).
-// ---------------------------------------------------------------------------
-const tasks: Task[] = [];
-
-// ---------------------------------------------------------------------------
-// Shared helpers
+// Shared helpers (HTTP-side)
 // ---------------------------------------------------------------------------
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -56,32 +48,26 @@ function sendValidationError(
 // GET /api/v1/tasks — list, with filters and sorting
 // ---------------------------------------------------------------------------
 
-const SORT_FIELDS = ['createdAt', 'dueDate', 'priority'] as const;
-type SortField = (typeof SORT_FIELDS)[number];
-
 const ORDERS = ['asc', 'desc'] as const;
-
-// Sorting by priority needs an ordering the strings themselves don't have.
-const PRIORITY_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2 };
 
 export const listTasks: RequestHandler = (req, res) => {
   const details: ApiErrorDetail[] = [];
 
   const completedRaw = firstString(req.query.completed);
-  let completedFilter: boolean | undefined;
+  let completed: boolean | undefined;
   if (completedRaw !== undefined) {
     if (completedRaw === 'true' || completedRaw === 'false') {
-      completedFilter = completedRaw === 'true';
+      completed = completedRaw === 'true';
     } else {
       details.push({ field: 'completed', message: "must be 'true' or 'false'" });
     }
   }
 
   const priorityRaw = firstString(req.query.priority);
-  let priorityFilter: Priority | undefined;
+  let priority: Priority | undefined;
   if (priorityRaw !== undefined) {
     if ((PRIORITIES as readonly string[]).includes(priorityRaw)) {
-      priorityFilter = priorityRaw as Priority;
+      priority = priorityRaw as Priority;
     } else {
       details.push({
         field: 'priority',
@@ -91,7 +77,7 @@ export const listTasks: RequestHandler = (req, res) => {
   }
 
   const sortRaw = firstString(req.query.sort);
-  let sortField: SortField = 'createdAt';
+  let sortField: SortField | undefined;
   if (sortRaw !== undefined) {
     if ((SORT_FIELDS as readonly string[]).includes(sortRaw)) {
       sortField = sortRaw as SortField;
@@ -104,7 +90,7 @@ export const listTasks: RequestHandler = (req, res) => {
   }
 
   const orderRaw = firstString(req.query.order);
-  let direction = -1; // desc: newest/highest first (contract default)
+  let direction: 1 | -1 | undefined;
   if (orderRaw !== undefined) {
     if ((ORDERS as readonly string[]).includes(orderRaw)) {
       direction = orderRaw === 'asc' ? 1 : -1;
@@ -118,29 +104,7 @@ export const listTasks: RequestHandler = (req, res) => {
     return;
   }
 
-  // filter() returns a NEW array, so the sort below never reorders the store.
-  const result = tasks
-    .filter(
-      (t) =>
-        (completedFilter === undefined || t.completed === completedFilter) &&
-        (priorityFilter === undefined || t.priority === priorityFilter),
-    )
-    .sort((a, b) => {
-      if (sortField === 'priority') {
-        return direction * (PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
-      }
-      if (sortField === 'dueDate') {
-        // Tasks without a due date sort last regardless of direction.
-        if (a.dueDate === null || b.dueDate === null) {
-          if (a.dueDate === b.dueDate) return 0;
-          return a.dueDate === null ? 1 : -1;
-        }
-        return direction * a.dueDate.localeCompare(b.dueDate);
-      }
-      // ISO 8601 strings sort correctly as plain strings.
-      return direction * a.createdAt.localeCompare(b.createdAt);
-    });
-
+  const result = tasksService.listTasks({ completed, priority, sortField, direction });
   res.status(200).json(result);
 };
 
@@ -167,25 +131,12 @@ export const createTask: RequestHandler = (req, res) => {
     return;
   }
 
-  // TODO(phase-6): the double cast below is a deliberate, visible lie — we
-  // have only proven `title`; priority/dueDate/description are trusted
-  // unchecked. Schema validation will replace trust with proof.
+  // TODO(phase-6): deliberate, visible lie — only `title` is proven;
+  // priority/dueDate/description are trusted unchecked until schema
+  // validation replaces trust with proof.
   const input = body as unknown as CreateTaskInput;
-  const now = new Date().toISOString();
 
-  const task: Task = {
-    id: crypto.randomUUID(),
-    title: input.title.trim(),
-    description: input.description ?? '',
-    completed: false, // contract: never client-set at creation
-    priority: input.priority ?? 'medium',
-    dueDate: input.dueDate ?? null,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  tasks.push(task);
-
+  const task = tasksService.createTask(input);
   res.status(201).location(`/api/v1/tasks/${task.id}`).json(task);
 };
 
@@ -194,8 +145,7 @@ export const createTask: RequestHandler = (req, res) => {
 // ---------------------------------------------------------------------------
 
 export const getTask: RequestHandler = (req, res) => {
-  const { id } = req.params;
-  const task = tasks.find((t) => t.id === id);
+  const task = tasksService.getTaskById(firstString(req.params.id) ?? '');
 
   if (task === undefined) {
     sendNotFound(res);
@@ -218,19 +168,7 @@ const UPDATABLE_FIELDS = [
   'dueDate',
 ] as const;
 
-// Absent field = don't touch; present field = set — including `null` for
-// dueDate ("clear it") and `false` for completed. The merge checks
-// `!== undefined` and NEVER uses `??`: ?? would treat an explicit null as
-// "absent" and silently keep the old value.
 export const updateTask: RequestHandler = (req, res) => {
-  const { id } = req.params;
-  const task = tasks.find((t) => t.id === id);
-
-  if (task === undefined) {
-    sendNotFound(res);
-    return;
-  }
-
   const body: unknown = req.body;
 
   if (
@@ -256,17 +194,15 @@ export const updateTask: RequestHandler = (req, res) => {
     return;
   }
 
-  // TODO(phase-6): same visible lie as in POST — only title is proven;
-  // priority/dueDate/completed/description are trusted unchecked, and
-  // unknown fields are silently ignored instead of rejected.
+  // TODO(phase-6): same visible lie as in POST.
   const input = body as unknown as UpdateTaskInput;
 
-  if (input.title !== undefined) task.title = input.title.trim();
-  if (input.description !== undefined) task.description = input.description;
-  if (input.completed !== undefined) task.completed = input.completed;
-  if (input.priority !== undefined) task.priority = input.priority;
-  if (input.dueDate !== undefined) task.dueDate = input.dueDate; // null clears
-  task.updatedAt = new Date().toISOString();
+  const task = tasksService.updateTask(firstString(req.params.id) ?? '', input);
+
+  if (task === undefined) {
+    sendNotFound(res);
+    return;
+  }
 
   res.status(200).json(task);
 };
@@ -275,17 +211,13 @@ export const updateTask: RequestHandler = (req, res) => {
 // DELETE /api/v1/tasks/:id — remove
 // ---------------------------------------------------------------------------
 
-// Idempotent by end state: repeating the delete leaves the same world
-// (task absent), even though the second call answers 404.
 export const deleteTask: RequestHandler = (req, res) => {
-  const { id } = req.params;
-  const index = tasks.findIndex((t) => t.id === id);
+  const deleted = tasksService.deleteTask(firstString(req.params.id) ?? '');
 
-  if (index === -1) {
+  if (!deleted) {
     sendNotFound(res);
     return;
   }
 
-  tasks.splice(index, 1);
   res.status(204).end();
 };

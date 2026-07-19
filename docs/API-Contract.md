@@ -90,6 +90,11 @@ Status code policy (the blame line, [02-HTTP.md](02-HTTP.md)):
 | 422 | JSON fine, content invalid (missing title, bad priority, bad date…) — with `details` |
 | 500 | our bug; body never leaks internals (Phase 7) |
 
+**Precedence** (when a request is wrong in several ways): 400 (unparseable)
+→ 422 (invalid content) → 404 (unknown id). Rationale: cheapest checks first —
+we don't consult storage for a request we'd reject anyway. *(Decided during
+Phase 5; resolves the gap flagged in Phase 2's contract review exercise.)*
+
 ---
 
 ## Endpoints
