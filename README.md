@@ -48,7 +48,11 @@ npm start          # run the compiled production build
 - ✅ Phase 4: Controllers — HTTP layer extracted to named `RequestHandler`
   functions; routes reduced to wiring; envelope helpers deduplicated;
   behavior proven identical by sweep.
-- 🚧 Phase 5: Middleware & Services — next.
+- ✅ Phase 5: Middleware & Services — custom request-logging middleware
+  (first in pipeline, finish-event timing); business logic extracted to a
+  service layer speaking pure domain; contract precedence codified
+  (400 → 422 → 404).
+- 🚧 Phase 6: Validation — next: replace the `TODO(phase-6)` trust with proof.
 
 ## Documentation
 
@@ -62,6 +66,8 @@ Concept deep-dives live in [`docs/`](docs/):
 | [04-NodeJS](docs/04-NodeJS.md) | V8, libuv, the event loop, non-blocking I/O |
 | [06-Express-Routing](docs/06-Express-Routing.md) | Routers, mounting, route params, order law |
 | [07-Controllers](docs/07-Controllers.md) | The HTTP layer; thin-controller principle |
+| [08-Middleware](docs/08-Middleware.md) | The pipeline: next(), ordering, custom logger |
+| [17-Project-Architecture](docs/17-Project-Architecture.md) | The four layers and the dependency rule |
 | [05-Express](docs/05-Express.md) | The framework: middleware stack, req/res anatomy |
 | [12-Request-Lifecycle](docs/12-Request-Lifecycle.md) | Client → handler, every stage, measured |
 | [13-Response-Lifecycle](docs/13-Response-Lifecycle.md) | Handler → client, headers-first irreversibility |
