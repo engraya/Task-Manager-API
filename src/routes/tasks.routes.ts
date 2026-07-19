@@ -77,4 +77,36 @@ tasksRouter.post('/', (req: Request, res: Response) => {
   res.status(201).location(`/api/v1/tasks/${task.id}`).json(task);
 });
 
+// GET /api/v1/tasks/:id — fetch one task.
+// Contract: 200 + Task, or 404 envelope for an unknown id.
+tasksRouter.get('/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const task = tasks.find((t) => t.id === id);
+
+  if (task === undefined) {
+    const error: ApiError = { error: { message: 'Task not found' } };
+    res.status(404).json(error);
+    return;
+  }
+
+  res.status(200).json(task);
+});
+
+// DELETE /api/v1/tasks/:id — remove a task.
+// Contract: 204 with empty body, or 404 for an unknown id. Idempotent by
+// end state: repeating the delete leaves the same world (task absent).
+tasksRouter.delete('/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const index = tasks.findIndex((t) => t.id === id);
+
+  if (index === -1) {
+    const error: ApiError = { error: { message: 'Task not found' } };
+    res.status(404).json(error);
+    return;
+  }
+
+  tasks.splice(index, 1);
+  res.status(204).end();
+});
+
 export default tasksRouter;

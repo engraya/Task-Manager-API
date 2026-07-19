@@ -66,6 +66,33 @@ order is execution order. This matters most with parameters (added in
 Step 3.3): `'/special'` must be declared before `'/:id'`, or `:id` swallows
 it (`id === "special"`).
 
+## Route parameters (added Step 3.3)
+
+`'/:id'` declares a **path segment capture**: any value in that position
+matches, and Express exposes it as `req.params.id`.
+
+```
+GET /api/v1/tasks/18fc7c57-…
+        mount strips prefix → router matches '/:id'
+        req.params = { id: "18fc7c57-…" }
+```
+
+Facts that matter in practice:
+
+- **Params are strings, always** — the boundary rule
+  ([05-Express.md](05-Express.md)). Our ids are strings anyway (UUIDs), but a
+  numeric-id API must parse.
+- **A param matches ANY segment** — `/tasks/banana` also matches `'/:id'`
+  with `id === "banana"`. There is no format checking in the route; unknown
+  and malformed ids both fall to the same lookup-miss → 404. (Phase 6 can
+  add UUID-format validation to fail faster with a clearer message.)
+- **Declaration order strikes again** — a literal route like `'/stats'` must
+  be declared *before* `'/:id'`, or it's swallowed (`id === "stats"`).
+- **The find-or-404 guard pattern** — look up, guard-clause the miss with the
+  contract's error envelope, then the happy path runs unindented. Used
+  identically by GET one / DELETE / PATCH; the repetition is deliberate
+  pressure for Phase 4's extraction.
+
 ## File conventions
 
 - One router per resource: `tasks.routes.ts`, later `auth.routes.ts`.
