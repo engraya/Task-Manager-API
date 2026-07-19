@@ -6,8 +6,30 @@
 
 import crypto from 'node:crypto';
 import { Router, type Request, type Response } from 'express';
-import type { CreateTaskInput, Task, UpdateTaskInput } from '../types/task';
-import type { ApiError } from '../types/api';
+import {
+  PRIORITIES,
+  type CreateTaskInput,
+  type Priority,
+  type Task,
+  type UpdateTaskInput,
+} from '../types/task';
+import type { ApiError, ApiErrorDetail } from '../types/api';
+
+const SORT_FIELDS = ['createdAt', 'dueDate', 'priority'] as const;
+type SortField = (typeof SORT_FIELDS)[number];
+
+const ORDERS = ['asc', 'desc'] as const;
+
+// Sorting by priority needs an ordering the strings themselves don't have.
+const PRIORITY_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2 };
+
+// Query values arrive as string | string[] | nested objects (qs parsing).
+// Policy: take the first string if the key was repeated, undefined otherwise.
+function firstString(value: unknown): string | undefined {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value) && typeof value[0] === 'string') return value[0];
+  return undefined;
+}
 
 // The fields PATCH may touch — used to detect "empty" update requests.
 const UPDATABLE_FIELDS = [
@@ -30,10 +52,92 @@ const tasks: Task[] = [];
 
 const tasksRouter = Router();
 
-// GET /api/v1/tasks — list tasks.
-// Contract: 200 with Task[]; an empty collection is 200 + [], never 404.
-tasksRouter.get('/', (_req: Request, res: Response) => {
-  res.status(200).json(tasks);
+// GET /api/v1/tasks — list tasks, with contract filters and sorting:
+//   ?completed=true|false  ?priority=low|medium|high
+//   ?sort=createdAt|dueDate|priority (default createdAt)
+//   ?order=asc|desc (default desc)
+// Contract: 200 with Task[] ([] when empty); 422 on invalid query values.
+tasksRouter.get('/', (req: Request, res: Response) => {
+  const details: ApiErrorDetail[] = [];
+
+  const completedRaw = firstString(req.query.completed);
+  let completedFilter: boolean | undefined;
+  if (completedRaw !== undefined) {
+    if (completedRaw === 'true' || completedRaw === 'false') {
+      completedFilter = completedRaw === 'true';
+    } else {
+      details.push({ field: 'completed', message: "must be 'true' or 'false'" });
+    }
+  }
+
+  const priorityRaw = firstString(req.query.priority);
+  let priorityFilter: Priority | undefined;
+  if (priorityRaw !== undefined) {
+    if ((PRIORITIES as readonly string[]).includes(priorityRaw)) {
+      priorityFilter = priorityRaw as Priority;
+    } else {
+      details.push({
+        field: 'priority',
+        message: `must be one of ${PRIORITIES.join(', ')}`,
+      });
+    }
+  }
+
+  const sortRaw = firstString(req.query.sort);
+  let sortField: SortField = 'createdAt';
+  if (sortRaw !== undefined) {
+    if ((SORT_FIELDS as readonly string[]).includes(sortRaw)) {
+      sortField = sortRaw as SortField;
+    } else {
+      details.push({
+        field: 'sort',
+        message: `must be one of ${SORT_FIELDS.join(', ')}`,
+      });
+    }
+  }
+
+  const orderRaw = firstString(req.query.order);
+  let direction = -1; // desc: newest/highest first (contract default)
+  if (orderRaw !== undefined) {
+    if ((ORDERS as readonly string[]).includes(orderRaw)) {
+      direction = orderRaw === 'asc' ? 1 : -1;
+    } else {
+      details.push({ field: 'order', message: "must be 'asc' or 'desc'" });
+    }
+  }
+
+  if (details.length > 0) {
+    const error: ApiError = {
+      error: { message: 'Invalid query parameters', details },
+    };
+    res.status(422).json(error);
+    return;
+  }
+
+  // filter() returns a NEW array, so the sort below never reorders the store.
+  const result = tasks
+    .filter(
+      (t) =>
+        (completedFilter === undefined || t.completed === completedFilter) &&
+        (priorityFilter === undefined || t.priority === priorityFilter),
+    )
+    .sort((a, b) => {
+      if (sortField === 'priority') {
+        return direction * (PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
+      }
+      if (sortField === 'dueDate') {
+        // Tasks without a due date sort last regardless of direction.
+        if (a.dueDate === null || b.dueDate === null) {
+          if (a.dueDate === b.dueDate) return 0;
+          return a.dueDate === null ? 1 : -1;
+        }
+        return direction * a.dueDate.localeCompare(b.dueDate);
+      }
+      // ISO 8601 strings sort correctly as plain strings.
+      return direction * a.createdAt.localeCompare(b.createdAt);
+    });
+
+  res.status(200).json(result);
 });
 
 // POST /api/v1/tasks — create a task.
