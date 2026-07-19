@@ -136,6 +136,50 @@ Phase 5; resolves the gap flagged in Phase 2's contract review exercise.)*
   (the *first* delete says 204, a retry says 404; state, not status, is what's
   idempotent)
 
+## Authentication (added Phase 10)
+
+### The User resource (never fully exposed)
+
+```ts
+interface User {           // internal shape — passwordHash NEVER leaves the API
+  id: string;              // UUID, server-generated
+  email: string;           // unique, stored lowercase
+  passwordHash: string;    // bcrypt — never in any response, ever
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface PublicUser {     // what responses carry
+  id: string;
+  email: string;
+  createdAt: string;
+}
+```
+
+### A1 · Register — `POST /api/v1/auth/register`
+
+- **Body:** `{ email: string, password: string }` — email valid + normalized
+  to lowercase; password 8–72 chars (72 = bcrypt's input limit)
+- **201** → `PublicUser` (no token — clients log in explicitly)
+- **409** → `ApiError` — email already registered (the reserved code, live)
+- **422 / 400** → `ApiError`
+- Not idempotent (like all creates)
+
+### A2 · Login — `POST /api/v1/auth/login` (Phase 10.2)
+
+- **Body:** `{ email, password }`
+- **200** → `{ token: string }` — a JWT; expires (lifetime configured server-side)
+- **401** → `ApiError` with a DELIBERATELY VAGUE message ("Invalid email or
+  password") — never reveal which half was wrong (user-enumeration defense)
+
+### Protected endpoints (Phase 10.3+)
+
+All `/api/v1/tasks` endpoints require `Authorization: Bearer <token>`.
+Missing/invalid/expired token → **401** `ApiError`. (Phase 11 adds per-user
+ownership: your token sees your tasks.)
+
+---
+
 ### 0 · Health — `GET /health` (implemented Phase 2)
 
 - Outside `/api/v1` — it describes the *process*, not the domain, and

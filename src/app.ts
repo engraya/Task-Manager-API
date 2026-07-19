@@ -9,6 +9,7 @@ import { isDatabaseConnected } from './database/connection';
 import { NotFoundError } from './errors/app-error';
 import { errorHandler } from './middlewares/error-handler';
 import { requestLogger } from './middlewares/request-logger';
+import authRouter from './routes/auth.routes';
 import tasksRouter from './routes/tasks.routes';
 
 interface HealthResponse {
@@ -44,7 +45,8 @@ app.get('/health', (_req: Request, res: Response) => {
   res.status(dbConnected ? 200 : 503).json(health);
 });
 
-// The tasks resource — router handles everything under this prefix.
+// Resource routers — one mount per resource.
+app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/tasks', tasksRouter);
 
 // Fallback — reached only if no route above matched. It doesn't format

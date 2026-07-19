@@ -34,3 +34,11 @@ export class ValidationError extends AppError {
     super(422, message, details);
   }
 }
+
+// 409: the request is valid but collides with current state (e.g. an email
+// that is already registered — backed by the unique index).
+export class ConflictError extends AppError {
+  constructor(message = 'Resource conflict') {
+    super(409, message);
+  }
+}
