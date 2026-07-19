@@ -42,7 +42,10 @@ npm start          # run the compiled production build
 - ✅ Phase 2: Express Fundamentals — req/res anatomy, health endpoint, REST
   principles, the [v1 API contract](docs/API-Contract.md), request/response
   lifecycles traced end to end.
-- 🚧 Phase 3: Routing — next: implement `/api/v1/tasks` against the contract.
+- ✅ Phase 3: Routing — all five contract endpoints live on `/api/v1/tasks`:
+  create (201+Location), list (filters + sorting), get-one, patch
+  (absent-vs-null semantics), delete (204); uniform error envelope.
+- 🚧 Phase 4: Controllers — next: extract HTTP handling from the routes file.
 
 ## Documentation
 
@@ -54,6 +57,7 @@ Concept deep-dives live in [`docs/`](docs/):
 | [02-HTTP](docs/02-HTTP.md) | The protocol: methods, status codes, idempotency |
 | [03-REST](docs/03-REST.md) | Resources × methods, URL design, maturity model |
 | [04-NodeJS](docs/04-NodeJS.md) | V8, libuv, the event loop, non-blocking I/O |
+| [06-Express-Routing](docs/06-Express-Routing.md) | Routers, mounting, route params, order law |
 | [05-Express](docs/05-Express.md) | The framework: middleware stack, req/res anatomy |
 | [12-Request-Lifecycle](docs/12-Request-Lifecycle.md) | Client → handler, every stage, measured |
 | [13-Response-Lifecycle](docs/13-Response-Lifecycle.md) | Handler → client, headers-first irreversibility |
