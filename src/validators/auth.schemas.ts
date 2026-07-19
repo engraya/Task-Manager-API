@@ -18,3 +18,16 @@ export const registerSchema = z.strictObject({
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+// Login validates SHAPE only — no min-length rule: the password policy is
+// register's business; login's only question is "does this match?", and a
+// too-short attempt should fail with the same vague 401 as any wrong
+// password, not a helpful 422.
+export const loginSchema = z.strictObject({
+  email: z
+    .email({ message: 'email must be a valid email address' })
+    .transform((value) => value.toLowerCase()),
+  password: z.string({ message: 'password is required and must be a string' }),
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;

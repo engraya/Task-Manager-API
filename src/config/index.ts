@@ -50,8 +50,23 @@ function parseMongoUri(value: string | undefined): string {
   return value;
 }
 
+// REQUIRED, no default (a default signing secret = every deployment
+// forgeable), and long enough that brute-forcing the secret is hopeless.
+function parseJwtSecret(value: string | undefined): string {
+  if (value === undefined) {
+    throw new Error(
+      'JWT_SECRET is required — generate one: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+    );
+  }
+  if (value.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters');
+  }
+  return value;
+}
+
 export const config = {
   nodeEnv: parseNodeEnv(process.env.NODE_ENV),
   port: parsePort(process.env.PORT),
   mongoUri: parseMongoUri(process.env.MONGODB_URI),
+  jwtSecret: parseJwtSecret(process.env.JWT_SECRET),
 } as const;

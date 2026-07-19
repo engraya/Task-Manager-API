@@ -42,3 +42,11 @@ export class ConflictError extends AppError {
     super(409, message);
   }
 }
+
+// 401: not authenticated — missing, wrong, or expired credentials. The
+// default message is deliberately vague: never reveal WHICH part failed.
+export class UnauthorizedError extends AppError {
+  constructor(message = 'Invalid email or password') {
+    super(401, message);
+  }
+}
