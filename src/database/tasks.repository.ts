@@ -25,6 +25,7 @@ export interface TaskFilter {
 function toTask(doc: TaskDoc): Task {
   return {
     id: doc._id,
+    ownerId: doc.ownerId,
     title: doc.title,
     description: doc.description,
     completed: doc.completed,

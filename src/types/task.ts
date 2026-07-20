@@ -9,6 +9,7 @@ export type Priority = (typeof PRIORITIES)[number];
 
 export interface Task {
   id: string; // UUID, server-generated, immutable
+  ownerId: string; // the User.id that owns this task; server-set from the token
   title: string; // 1–200 chars
   description: string; // 0–2000 chars, default ""
   completed: boolean; // default false

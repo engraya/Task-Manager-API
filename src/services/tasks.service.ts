@@ -50,11 +50,18 @@ export async function listTasks(options: ListTasksOptions = {}): Promise<Task[]>
     });
 }
 
-export async function createTask(input: CreateTaskInput): Promise<Task> {
+// ownerId is a SEPARATE parameter, not part of CreateTaskInput: the client
+// never sends who owns a task — the server assigns it from the verified token.
+// Keeping it out of the input type makes "client sets owner" unrepresentable.
+export async function createTask(
+  input: CreateTaskInput,
+  ownerId: string,
+): Promise<Task> {
   const now = new Date().toISOString();
 
   const task: Task = {
     id: crypto.randomUUID(),
+    ownerId,
     title: input.title,
     description: input.description ?? '',
     completed: false, // invariant: a new task is never born completed

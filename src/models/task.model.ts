@@ -14,6 +14,7 @@ import { PRIORITIES } from '../types/task';
 
 export interface TaskDoc {
   _id: string; // our UUID
+  ownerId: string; // User._id that owns this task
   title: string;
   description: string;
   completed: boolean;
@@ -26,6 +27,10 @@ export interface TaskDoc {
 const taskSchema = new Schema<TaskDoc>(
   {
     _id: { type: String, required: true },
+    // index: true — EVERY authorization query in the next step filters by
+    // ownerId ("your tasks only"). Without an index that filter is a full
+    // collection scan; we add it alongside the field it serves.
+    ownerId: { type: String, required: true, index: true },
     title: { type: String, required: true },
     // NOT `required` — mongoose's required-on-String rejects '' (empty
     // string), but the contract says description defaults to "". The

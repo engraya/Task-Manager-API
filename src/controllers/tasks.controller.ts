@@ -3,7 +3,7 @@
 // request → DELEGATE to the service → RESPOND with a status and body.
 // Business rules and data live one layer down, in ../services/tasks.service.
 
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler } from 'express';
 import * as tasksService from '../services/tasks.service';
 import { SORT_FIELDS, type SortField } from '../services/tasks.service';
 import { NotFoundError, ValidationError } from '../errors/app-error';
@@ -25,6 +25,20 @@ function firstString(value: unknown): string | undefined {
   if (typeof value === 'string') return value;
   if (Array.isArray(value) && typeof value[0] === 'string') return value[0];
   return undefined;
+}
+
+// req.userId is typed `string | undefined` (optional — see types/express.d.ts)
+// because the field exists globally on Request but is only SET behind
+// requireAuth. Every handler here runs behind that gate, so undefined means a
+// wiring bug (gate missing from the chain), NOT a client fault — hence a plain
+// Error → 500 (a PROGRAMMER error, docs/10), not a 401. This function is the
+// one place the optional type gets narrowed to the string the rest can trust.
+function requireUserId(req: Request): string {
+  const { userId } = req;
+  if (userId === undefined) {
+    throw new Error('requireUserId: no req.userId — requireAuth must run first');
+  }
+  return userId;
 }
 
 // ---------------------------------------------------------------------------
@@ -105,7 +119,9 @@ export const createTask: RequestHandler = async (req, res) => {
   // assertion documents that trust relationship (see routes file).
   const input = req.body as CreateTaskInput;
 
-  const task = await tasksService.createTask(input);
+  // The owner is the authenticated caller — assigned server-side, never taken
+  // from the body. The task is born belonging to whoever holds the token.
+  const task = await tasksService.createTask(input, requireUserId(req));
   res.status(201).location(`/api/v1/tasks/${task.id}`).json(task);
 };
 

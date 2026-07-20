@@ -14,6 +14,7 @@ Base path: **`/api/v1`** · All bodies: `application/json` · All times: ISO 860
 ```ts
 interface Task {
   id: string;                            // UUID, server-generated, immutable
+  ownerId: string;                      // User.id of the owner; server-set (Phase 11)
   title: string;                        // 1–200 chars
   description: string;                  // 0–2000 chars, default ""
   completed: boolean;                   // default false
@@ -40,6 +41,10 @@ Design decisions (the *why* behind each field):
   string union is the same one-source-of-truth pattern as `NodeEnv` in config.
 - **`createdAt`/`updatedAt` are server-set** — clients never send them;
   timestamps from untrusted clocks are meaningless.
+- **`ownerId` is server-set from the token** (Phase 11), never accepted in a
+  body — a client that could name its own `ownerId` could plant tasks in
+  another account. It appears in responses, but that leaks nothing: you can
+  only ever fetch your own tasks, so it always equals your own `sub`.
 
 ### Client input shapes (what requests may contain)
 
