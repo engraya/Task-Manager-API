@@ -189,7 +189,16 @@ All `/api/v1/tasks` endpoints require `Authorization: Bearer <token>`.
 
 The auth endpoints themselves (`/register`, `/login`) are public — the
 bootstrap boundary: you cannot require a token to obtain a token.
-(Phase 11 adds per-user ownership: your token sees your tasks.)
+
+**Per-user ownership (Phase 11):** every task belongs to the user who created
+it (`ownerId`, server-set). A caller sees and modifies only their own tasks:
+
+- `GET /tasks` returns only the caller's tasks
+- `GET`/`PATCH`/`DELETE /tasks/:id` on a task that isn't the caller's returns
+  **404 Not Found** — identical to a task that doesn't exist. This is
+  deliberate: a 403 would confirm the id belongs to *someone*, enabling
+  cross-user enumeration. Existence is a secret, so we don't reveal it.
+  (See [29-Authorization.md](29-Authorization.md).)
 
 ---
 

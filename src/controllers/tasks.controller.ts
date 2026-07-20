@@ -100,7 +100,7 @@ export const listTasks: RequestHandler = async (req, res) => {
     throw new ValidationError(details, 'Invalid query parameters');
   }
 
-  const result = await tasksService.listTasks({
+  const result = await tasksService.listTasks(requireUserId(req), {
     completed,
     priority,
     sortField,
@@ -130,8 +130,13 @@ export const createTask: RequestHandler = async (req, res) => {
 // ---------------------------------------------------------------------------
 
 export const getTask: RequestHandler = async (req, res) => {
-  const task = await tasksService.getTaskById(firstString(req.params.id) ?? '');
+  const task = await tasksService.getTaskById(
+    firstString(req.params.id) ?? '',
+    requireUserId(req),
+  );
 
+  // Not yours is reported as not found — see the 404-not-403 note in getTask's
+  // service/repository layers and docs/29-Authorization.md.
   if (task === undefined) {
     throw new NotFoundError('Task not found');
   }
@@ -150,6 +155,7 @@ export const updateTask: RequestHandler = async (req, res) => {
   const task = await tasksService.updateTask(
     firstString(req.params.id) ?? '',
     input,
+    requireUserId(req),
   );
 
   if (task === undefined) {
@@ -164,7 +170,10 @@ export const updateTask: RequestHandler = async (req, res) => {
 // ---------------------------------------------------------------------------
 
 export const deleteTask: RequestHandler = async (req, res) => {
-  const deleted = await tasksService.deleteTask(firstString(req.params.id) ?? '');
+  const deleted = await tasksService.deleteTask(
+    firstString(req.params.id) ?? '',
+    requireUserId(req),
+  );
 
   if (!deleted) {
     throw new NotFoundError('Task not found');

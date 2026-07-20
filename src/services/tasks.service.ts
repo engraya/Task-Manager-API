@@ -26,12 +26,17 @@ export interface ListTasksOptions {
   direction?: 1 | -1; // default: -1 (desc — newest/highest first)
 }
 
-export async function listTasks(options: ListTasksOptions = {}): Promise<Task[]> {
+// ownerId leads every signature in this file now: authorization is not an
+// optional add-on the caller might forget, it's the first thing you must say.
+export async function listTasks(
+  ownerId: string,
+  options: ListTasksOptions = {},
+): Promise<Task[]> {
   const { completed, priority, sortField = 'createdAt', direction = -1 } = options;
 
   // Filtering happens in the database (only matching docs cross the wire);
   // ordering policy stays here (see the repository's note on sorting).
-  const matching = await tasksRepository.findAll({ completed, priority });
+  const matching = await tasksRepository.findAll(ownerId, { completed, priority });
 
   return matching.sort((a, b) => {
       if (sortField === 'priority') {
@@ -75,8 +80,11 @@ export async function createTask(
   return task;
 }
 
-export async function getTaskById(id: string): Promise<Task | undefined> {
-  return tasksRepository.findById(id);
+export async function getTaskById(
+  id: string,
+  ownerId: string,
+): Promise<Task | undefined> {
+  return tasksRepository.findById(id, ownerId);
 }
 
 // Merge semantics: absent field = don't touch; present field = set —
@@ -87,8 +95,12 @@ export async function getTaskById(id: string): Promise<Task | undefined> {
 export async function updateTask(
   id: string,
   input: UpdateTaskInput,
+  ownerId: string,
 ): Promise<Task | undefined> {
-  const existing = await tasksRepository.findById(id);
+  // Owner-scoped fetch: if it isn't the caller's task, `existing` is
+  // undefined and we return undefined — the controller renders that as 404,
+  // identical to a task that never existed.
+  const existing = await tasksRepository.findById(id, ownerId);
   if (existing === undefined) {
     return undefined;
   }
@@ -105,6 +117,6 @@ export async function updateTask(
   return updated;
 }
 
-export async function deleteTask(id: string): Promise<boolean> {
-  return tasksRepository.remove(id);
+export async function deleteTask(id: string, ownerId: string): Promise<boolean> {
+  return tasksRepository.remove(id, ownerId);
 }
