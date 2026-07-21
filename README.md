@@ -30,9 +30,11 @@ npm run dev            # development: tsx watch (auto-restarts on save)
 Other scripts:
 
 ```bash
-npm run typecheck  # type-check only, no output files
-npm run build      # compile src/ -> dist/ with tsc
-npm start          # run the compiled production build
+npm run typecheck        # type-check only, no output files
+npm run build            # compile src/ -> dist/ with tsc
+npm start                # run the compiled production build
+npm run seed             # register a seed user + POST the sample tasks (needs a running server)
+npm run migrate:orphans  # report owner-less tasks; add -- --apply to delete them
 ```
 
 ## Project Status
@@ -72,7 +74,12 @@ npm start          # run the compiled production build
   duplicate authority), login issuing 1-hour JWTs, vague timing-equalized
   401s, `requireAuth` middleware (signature + expiry verification, typed
   `req.userId` via module augmentation) gating all task routes.
-- 🚧 Phase 11: Authorization — next.
+- ✅ Phase 11: Authorization — per-user task ownership: `ownerId` stamped
+  from the token (never the body), every repository read/write scoped by
+  owner (required argument — unscoped access won't compile), foreign tasks
+  return 404-not-403 (no cross-user enumeration); orphaned-data migration
+  (`npm run migrate:orphans`) and an auth-aware seeder.
+- 🚧 Phase 12: Testing — next.
 
 ## Documentation
 
@@ -99,6 +106,7 @@ Concept deep-dives live in [`docs/`](docs/):
 | [26-Persistence](docs/26-Persistence.md) | Files first: atomicity, write queues, cache rules |
 | [27-MongoDB](docs/27-MongoDB.md) | Documents, Mongoose, lean reads, readiness |
 | [28-Authentication](docs/28-Authentication.md) | bcrypt vs argon2, JWT anatomy, sessions vs tokens |
+| [29-Authorization](docs/29-Authorization.md) | Ownership, IDOR, scope-the-query, 403 vs 404 |
 | [API-Contract](docs/API-Contract.md) | **The v1 contract** — endpoints, shapes, status codes |
 
 (Numbering follows the full course outline; gaps fill in as later phases introduce their concepts.)
