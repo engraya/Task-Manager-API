@@ -64,9 +64,33 @@ function parseJwtSecret(value: string | undefined): string {
   return value;
 }
 
+// pino's level names, quietest→noisiest. A level shows itself and everything
+// above it in severity (level 'info' emits info/warn/error/fatal, hides debug).
+const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
+type LogLevel = (typeof LOG_LEVELS)[number];
+
+// Default depends on environment: production stays at 'info' (signal, not
+// noise, and cheaper), development drops to 'debug' (see everything while
+// building). An explicit LOG_LEVEL always wins.
+function parseLogLevel(value: string | undefined, nodeEnv: NodeEnv): LogLevel {
+  if (value === undefined) {
+    return nodeEnv === 'production' ? 'info' : 'debug';
+  }
+  if ((LOG_LEVELS as readonly string[]).includes(value)) {
+    return value as LogLevel;
+  }
+  throw new Error(
+    `Invalid LOG_LEVEL "${value}" — expected one of: ${LOG_LEVELS.join(', ')}`,
+  );
+}
+
+// nodeEnv is needed by parseLogLevel, so compute it once up front.
+const nodeEnv = parseNodeEnv(process.env.NODE_ENV);
+
 export const config = {
-  nodeEnv: parseNodeEnv(process.env.NODE_ENV),
+  nodeEnv,
   port: parsePort(process.env.PORT),
   mongoUri: parseMongoUri(process.env.MONGODB_URI),
   jwtSecret: parseJwtSecret(process.env.JWT_SECRET),
+  logLevel: parseLogLevel(process.env.LOG_LEVEL, nodeEnv),
 } as const;

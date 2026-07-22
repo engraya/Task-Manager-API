@@ -7,14 +7,18 @@
 import app from './app';
 import { config } from './config';
 import { connectToDatabase } from './database/connection';
+import { logger } from './logger';
 
 async function start(): Promise<void> {
   await connectToDatabase();
-  console.log('Connected to MongoDB');
+  logger.info('Connected to MongoDB');
 
   app.listen(config.port, () => {
-    console.log(
-      `Server listening on http://localhost:${config.port} (${config.nodeEnv})`,
+    // Structured fields (port, env) travel alongside the message, so a log
+    // query can filter on them — not buried inside an interpolated string.
+    logger.info(
+      { port: config.port, env: config.nodeEnv },
+      'Server listening',
     );
   });
 }
@@ -22,6 +26,6 @@ async function start(): Promise<void> {
 start().catch((err: unknown) => {
   // Startup failures are fatal by design: crash loudly, let the platform
   // restart us — never limp along half-initialized (docs/16, fail-fast).
-  console.error('Failed to start:', err);
+  logger.fatal({ err }, 'Failed to start');
   process.exit(1);
 });

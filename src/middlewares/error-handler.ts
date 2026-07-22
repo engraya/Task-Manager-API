@@ -7,6 +7,7 @@
 
 import type { ErrorRequestHandler } from 'express';
 import { AppError } from '../errors/app-error';
+import { logger } from '../logger';
 import type { ApiError } from '../types/api';
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
@@ -49,7 +50,11 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
   // Everything else is a BUG: log everything for us, reveal nothing to the
   // client. The message is deliberately generic — stack traces, file paths
   // and library internals never cross the trust boundary.
-  console.error(err);
+  //
+  // logger.error({ err }, msg): the `err` key triggers pino's error
+  // serializer, which records the type, message, and full stack as structured
+  // fields — searchable, unlike a console.error string dump.
+  logger.error({ err }, 'Unhandled error while processing request');
   const body: ApiError = { error: { message: 'Internal server error' } };
   res.status(500).json(body);
 };
