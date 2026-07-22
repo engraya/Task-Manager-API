@@ -1,0 +1,8 @@
+{
+  // The PRODUCTION build config. It extends the base tsconfig but excludes
+  // test files, so `npm run build` compiles application code to dist/ and
+  // never ships *.test.ts. The base tsconfig.json still SEES the tests, so
+  // `npm run typecheck` type-checks them — tests are checked but not emitted.
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
