@@ -6,14 +6,15 @@
 
 import app from './app';
 import { config } from './config';
-import { connectToDatabase } from './database/connection';
+import { connectToDatabase, disconnectFromDatabase } from './database/connection';
 import { logger } from './logger';
+import { registerGracefulShutdown } from './shutdown';
 
 async function start(): Promise<void> {
   await connectToDatabase();
   logger.info('Connected to MongoDB');
 
-  app.listen(config.port, () => {
+  const server = app.listen(config.port, () => {
     // Structured fields (port, env) travel alongside the message, so a log
     // query can filter on them — not buried inside an interpolated string.
     logger.info(
@@ -21,6 +22,10 @@ async function start(): Promise<void> {
       'Server listening',
     );
   });
+
+  // From here on, a SIGTERM/SIGINT drains in-flight requests and closes the DB
+  // before exiting — deploys and restarts don't drop live traffic.
+  registerGracefulShutdown(server, disconnectFromDatabase);
 }
 
 start().catch((err: unknown) => {
