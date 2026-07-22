@@ -47,6 +47,22 @@ npm run test:integration # integration tests only (uses an in-memory MongoDB)
 npm run test:coverage    # full suite + coverage report
 ```
 
+## Production
+
+```bash
+npm run typecheck && npm test   # gate: types + tests must pass
+npm run build                   # compile src/ -> dist/ (app code only)
+npm start                       # node dist/server.js
+```
+
+Configuration is entirely environment-driven (see [`.env.example`](.env.example)
+and [docs/32-Deployment.md](docs/32-Deployment.md)). Required in production:
+`MONGODB_URI` and `JWT_SECRET` (both fail fast if missing). The process reports
+readiness at `GET /health` (503 when the DB link is down) and shuts down
+gracefully on `SIGTERM`/`SIGINT` (drains in-flight requests, closes the DB).
+Log JSON to stdout; terminate TLS at your proxy and set `TRUST_PROXY` to the
+real hop count.
+
 ## Project Status
 
 - ✅ Phase 1: Project Initialization — git, npm, TypeScript toolchain, raw Node
@@ -98,7 +114,13 @@ npm run test:coverage    # full suite + coverage report
   in dev, level from `LOG_LEVEL`, secret redaction); per-request logging
   with correlation ids (child logger on `req.log`, reused/echoed
   `X-Request-Id`, level derived from status), errors logged with the reqId.
-- 🚧 Phase 14: Deployment Preparation — next.
+- ✅ Phase 14: Deployment Preparation — compiled `dist/` build; helmet
+  security headers, no `X-Powered-By`, config-driven `trust proxy`; graceful
+  shutdown (SIGTERM/SIGINT drain + close + timeout backstop); readiness
+  health check; deployment guide.
+
+**🎉 Course complete — all 14 phases done.** See [`docs/`](docs/) for the
+full concept-by-concept deep dive built alongside the code.
 
 ## Documentation
 
@@ -128,6 +150,7 @@ Concept deep-dives live in [`docs/`](docs/):
 | [29-Authorization](docs/29-Authorization.md) | Ownership, IDOR, scope-the-query, 403 vs 404 |
 | [30-Testing](docs/30-Testing.md) | Pyramid, test doubles, Supertest, in-memory DB, coverage |
 | [31-Logging](docs/31-Logging.md) | Structured logs, levels, redaction, correlation ids |
+| [32-Deployment](docs/32-Deployment.md) | Build, config, health, shutdown, hardening, checklist |
 | [API-Contract](docs/API-Contract.md) | **The v1 contract** — endpoints, shapes, status codes |
 
 (Numbering follows the full course outline; gaps fill in as later phases introduce their concepts.)
