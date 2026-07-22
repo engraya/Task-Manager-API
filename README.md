@@ -94,7 +94,11 @@ npm run test:coverage    # full suite + coverage report
   tests driving the real app against an in-memory MongoDB — including the
   authorization guarantee as a regression test. Build/test config split,
   unit/integration script separation, coverage (~82%).
-- 🚧 Phase 13: Logging — next.
+- ✅ Phase 13: Logging — structured logging with pino (JSON in prod, pretty
+  in dev, level from `LOG_LEVEL`, secret redaction); per-request logging
+  with correlation ids (child logger on `req.log`, reused/echoed
+  `X-Request-Id`, level derived from status), errors logged with the reqId.
+- 🚧 Phase 14: Deployment Preparation — next.
 
 ## Documentation
 
@@ -123,6 +127,7 @@ Concept deep-dives live in [`docs/`](docs/):
 | [28-Authentication](docs/28-Authentication.md) | bcrypt vs argon2, JWT anatomy, sessions vs tokens |
 | [29-Authorization](docs/29-Authorization.md) | Ownership, IDOR, scope-the-query, 403 vs 404 |
 | [30-Testing](docs/30-Testing.md) | Pyramid, test doubles, Supertest, in-memory DB, coverage |
+| [31-Logging](docs/31-Logging.md) | Structured logs, levels, redaction, correlation ids |
 | [API-Contract](docs/API-Contract.md) | **The v1 contract** — endpoints, shapes, status codes |
 
 (Numbering follows the full course outline; gaps fill in as later phases introduce their concepts.)
