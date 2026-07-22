@@ -88,6 +88,23 @@ function parseLogLevel(value: string | undefined, nodeEnv: NodeEnv): LogLevel {
   );
 }
 
+// How many reverse-proxy hops to trust for X-Forwarded-* headers (real client
+// IP/protocol). 0 = trust none (use the socket address). Behind one load
+// balancer, set 1. Trusting MORE hops than actually exist lets a client forge
+// X-Forwarded-For and spoof its IP — so the default is the paranoid 0.
+function parseTrustProxy(value: string | undefined): number {
+  if (value === undefined) {
+    return 0;
+  }
+  const hops = Number(value);
+  if (!Number.isInteger(hops) || hops < 0) {
+    throw new Error(
+      `Invalid TRUST_PROXY "${value}" — expected a non-negative integer (hop count)`,
+    );
+  }
+  return hops;
+}
+
 // nodeEnv is needed by parseLogLevel, so compute it once up front.
 const nodeEnv = parseNodeEnv(process.env.NODE_ENV);
 
@@ -97,4 +114,5 @@ export const config = {
   mongoUri: parseMongoUri(process.env.MONGODB_URI),
   jwtSecret: parseJwtSecret(process.env.JWT_SECRET),
   logLevel: parseLogLevel(process.env.LOG_LEVEL, nodeEnv),
+  trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
 } as const;

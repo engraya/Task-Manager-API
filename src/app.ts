@@ -4,6 +4,7 @@
 // drive it without ever opening a network port.
 
 import express, { type Request, type Response } from 'express';
+import helmet from 'helmet';
 import { config } from './config';
 import { isDatabaseConnected } from './database/connection';
 import { NotFoundError } from './errors/app-error';
@@ -21,9 +22,26 @@ interface HealthResponse {
 
 const app = express();
 
+// Don't advertise the framework. Express sends `X-Powered-By: Express` by
+// default — free reconnaissance telling an attacker exactly what to target.
+// (helmet also strips it; being explicit documents the intent.)
+app.disable('x-powered-by');
+
+// Behind a reverse proxy / load balancer, the real client IP and protocol
+// arrive in X-Forwarded-* headers. `trust proxy` says how many proxy hops to
+// trust so req.ip / req.protocol reflect the actual client. Default 0 (trust
+// none); trusting more hops than exist lets a client SPOOF its IP via a forged
+// X-Forwarded-For, so this is config-driven per deployment (docs/32).
+app.set('trust proxy', config.trustProxy);
+
 // First layer on purpose: subscribes before anything can respond, so every
 // request gets logged — including 404s and parse failures.
 app.use(requestLogger);
+
+// Security headers on every response: helmet sets a suite of sensible
+// defaults (HSTS, X-Content-Type-Options: nosniff, X-Frame-Options: DENY,
+// etc.) that harden the app against common browser-side attack vectors.
+app.use(helmet());
 
 // Body-parsing middleware — for requests with Content-Type: application/json
 // it parses the body stream and puts the result on req.body before any
