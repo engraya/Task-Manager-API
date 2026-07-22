@@ -37,6 +37,16 @@ npm run seed             # register a seed user + POST the sample tasks (needs a
 npm run migrate:orphans  # report owner-less tasks; add -- --apply to delete them
 ```
 
+Tests:
+
+```bash
+npm test                 # run the whole suite once
+npm run test:watch       # re-run affected tests on save (tight dev loop)
+npm run test:unit        # fast unit tests only (no database)
+npm run test:integration # integration tests only (uses an in-memory MongoDB)
+npm run test:coverage    # full suite + coverage report
+```
+
 ## Project Status
 
 - ✅ Phase 1: Project Initialization — git, npm, TypeScript toolchain, raw Node
@@ -79,7 +89,12 @@ npm run migrate:orphans  # report owner-less tasks; add -- --apply to delete the
   owner (required argument — unscoped access won't compile), foreign tasks
   return 404-not-403 (no cross-user enumeration); orphaned-data migration
   (`npm run migrate:orphans`) and an auth-aware seeder.
-- 🚧 Phase 12: Testing — next.
+- ✅ Phase 12: Testing — Vitest suite (36 tests): pure unit tests (schemas),
+  mocked-repository unit tests (service logic), and Supertest integration
+  tests driving the real app against an in-memory MongoDB — including the
+  authorization guarantee as a regression test. Build/test config split,
+  unit/integration script separation, coverage (~82%).
+- 🚧 Phase 13: Logging — next.
 
 ## Documentation
 
@@ -107,6 +122,7 @@ Concept deep-dives live in [`docs/`](docs/):
 | [27-MongoDB](docs/27-MongoDB.md) | Documents, Mongoose, lean reads, readiness |
 | [28-Authentication](docs/28-Authentication.md) | bcrypt vs argon2, JWT anatomy, sessions vs tokens |
 | [29-Authorization](docs/29-Authorization.md) | Ownership, IDOR, scope-the-query, 403 vs 404 |
+| [30-Testing](docs/30-Testing.md) | Pyramid, test doubles, Supertest, in-memory DB, coverage |
 | [API-Contract](docs/API-Contract.md) | **The v1 contract** — endpoints, shapes, status codes |
 
 (Numbering follows the full course outline; gaps fill in as later phases introduce their concepts.)
