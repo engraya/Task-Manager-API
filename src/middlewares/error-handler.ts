@@ -10,7 +10,7 @@ import { AppError } from '../errors/app-error';
 import { logger } from '../logger';
 import type { ApiError } from '../types/api';
 
-export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   // If the status line already left (mid-stream failure), we cannot change
   // the response — delegate to Express's default, which kills the socket so
   // the client at least knows the response is broken.
@@ -51,10 +51,14 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
   // client. The message is deliberately generic — stack traces, file paths
   // and library internals never cross the trust boundary.
   //
-  // logger.error({ err }, msg): the `err` key triggers pino's error
-  // serializer, which records the type, message, and full stack as structured
-  // fields — searchable, unlike a console.error string dump.
-  logger.error({ err }, 'Unhandled error while processing request');
+  // Log through the request's CHILD logger so this error line carries the same
+  // reqId as the rest of the request — you can pivot from the 500 straight to
+  // every other line that request produced. Fall back to the base logger if
+  // the error somehow occurred before requestLogger ran.
+  // The `err` key triggers pino's error serializer (type, message, full stack
+  // as structured fields — searchable, unlike a console.error string dump).
+  const log = req.log ?? logger;
+  log.error({ err }, 'Unhandled error while processing request');
   const body: ApiError = { error: { message: 'Internal server error' } };
   res.status(500).json(body);
 };

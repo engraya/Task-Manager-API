@@ -74,7 +74,11 @@ type LogLevel = (typeof LOG_LEVELS)[number];
 // building). An explicit LOG_LEVEL always wins.
 function parseLogLevel(value: string | undefined, nodeEnv: NodeEnv): LogLevel {
   if (value === undefined) {
-    return nodeEnv === 'production' ? 'info' : 'debug';
+    if (nodeEnv === 'production') return 'info';
+    // 'silent' in tests: the log CODE still runs (so those paths are exercised),
+    // but nothing prints — a clean test output. Override with LOG_LEVEL to debug.
+    if (nodeEnv === 'test') return 'silent';
+    return 'debug';
   }
   if ((LOG_LEVELS as readonly string[]).includes(value)) {
     return value as LogLevel;

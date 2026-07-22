@@ -7,11 +7,18 @@
 // through requireAuth. A non-optional type would let unprotected routes read
 // req.userId as if it were guaranteed — a lie the compiler couldn't catch.
 
+import type { Logger } from 'pino';
+
 declare global {
   namespace Express {
     interface Request {
       /** The authenticated user's id (JWT `sub`). Set by requireAuth. */
       userId?: string;
+      /** Per-request correlation id. Set by requestLogger (first middleware). */
+      id?: string;
+      /** Child logger pre-tagged with this request's id — log through it so
+       *  every line is correlated. Set by requestLogger. */
+      log?: Logger;
     }
   }
 }
