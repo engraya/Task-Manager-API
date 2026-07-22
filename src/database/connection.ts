@@ -5,10 +5,14 @@
 import mongoose from 'mongoose';
 import { config } from '../config';
 
-export async function connectToDatabase(): Promise<void> {
+// The URI defaults to the configured one (production/dev), but callers may
+// pass an override — integration tests hand in an in-memory MongoDB's URI so
+// they never touch a real cluster. config is still validated at import time
+// either way; this just chooses which server we actually dial.
+export async function connectToDatabase(uri: string = config.mongoUri): Promise<void> {
   // Fail fast at startup — a missing database URI is a configuration
   // error, not something to discover on the first request.
-  await mongoose.connect(config.mongoUri);
+  await mongoose.connect(uri);
 }
 
 export async function disconnectFromDatabase(): Promise<void> {
