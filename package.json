@@ -6,10 +6,10 @@
   "type": "commonjs",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "dev": "node api.js && tsx watch src/server.ts",
+    "build": "node api.js && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "start": "node dist/server.js",
+    "start": "node api.js && node dist/server.js",
     "seed": "tsx scripts/seed.ts",
     "migrate:orphans": "tsx scripts/migrate-orphan-tasks.ts",
     "test": "vitest run",
